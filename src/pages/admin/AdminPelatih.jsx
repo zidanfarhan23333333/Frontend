@@ -50,7 +50,7 @@ export default function AdminPelatih() {
     setLoading(true);
     try {
       const res = await api.get(
-        `/pelatih?search=${search}&page=${page}&limit=${perPage}`,
+        `/api/pelatih?search=${search}&page=${page}&limit=${perPage}`,
       );
 
       // Backend returns { pelatih: [...] } or { data: { pelatih: [...], pagination: {...} } }
@@ -81,7 +81,7 @@ export default function AdminPelatih() {
   const handleDelete = async (id) => {
     if (!confirm("Yakin hapus pelatih ini?")) return;
     try {
-      await api.delete(`/pelatih/${id}`);
+      await api.delete(`/api/pelatih/${id}`);
       toast.success("Pelatih dihapus");
       fetchPelatih();
     } catch (err) {

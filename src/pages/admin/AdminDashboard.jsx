@@ -39,9 +39,9 @@ export default function AdminDashboard() {
     try {
       // FIX: was using pemainRes.data (undefined variable) instead of pelatihRes.data
       const [statsRes, pelatihRes, bookingRes] = await Promise.all([
-        api.get("/admin/stats"),
-        api.get("/pelatih"),
-        api.get("/booking"),
+        api.get("/api/admin/stats"),
+        api.get("/api/pelatih"),
+        api.get("/api/booking"),
       ]);
 
       setStats(statsRes.data.data || statsRes.data);

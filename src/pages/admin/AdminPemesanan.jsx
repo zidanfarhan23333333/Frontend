@@ -40,7 +40,7 @@ export default function AdminPemesanan() {
     setLoading(true);
     try {
       const res = await api.get(
-        `/booking?search=${search}&page=${page}&limit=${perPage}`,
+        `/api/booking?search=${search}&page=${page}&limit=${perPage}`,
       );
 
       // Normalize response shape:

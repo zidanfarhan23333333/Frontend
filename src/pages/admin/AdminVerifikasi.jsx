@@ -22,7 +22,7 @@ export default function AdminVerifikasi() {
     setLoading(true);
     try {
       // Fetch all pelatih (no pagination — need full list for pending/verified split)
-      const res = await api.get("/pelatih?limit=100");
+      const res = await api.get("/api/pelatih?limit=100");
       const raw = res.data.data || res.data;
       const data = raw.pelatih || (Array.isArray(raw) ? raw : []);
       setList(data);
@@ -39,7 +39,7 @@ export default function AdminVerifikasi() {
   const updateStatus = async (id, status) => {
     setActionLoading(id);
     try {
-      await api.patch(`/pelatih/${id}/verifikasi`, { status });
+      await api.patch(`/api/pelatih/${id}/verifikasi`, { status });
       // Optimistically update local state to avoid full refetch
       setList((prev) =>
         prev.map((p) =>
