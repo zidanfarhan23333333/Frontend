@@ -32,9 +32,9 @@ export default function PelatihDashboard() {
     setError("");
     try {
       const [statsRes, bookingsRes, jadwalRes] = await Promise.all([
-        api.get("/pelatih/my-stats"),
-        api.get("/pelatih/bookings"),
-        api.get("/pelatih/my-jadwal"),
+        api.get("/api/pelatih/my-stats"),
+        api.get("/api/pelatih/bookings"),
+        api.get("/api/pelatih/my-jadwal"),
       ]);
 
       setStats(statsRes.data.data || statsRes.data);

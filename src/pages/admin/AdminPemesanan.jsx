@@ -11,7 +11,6 @@ export default function AdminPemesanan() {
   const { api } = useAuth();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  // FIX: was using static dummy data — now fetches from /booking API
   const [bookingList, setBookingList] = useState([]);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
@@ -39,12 +38,10 @@ export default function AdminPemesanan() {
   const fetchBookings = async () => {
     setLoading(true);
     try {
+      // FIX: pakai /api/admin/bookings (bukan /api/booking yang tidak ada)
       const res = await api.get(
-        `/api/booking?search=${search}&page=${page}&limit=${perPage}`,
+        `/api/admin/bookings?search=${search}&page=${page}&limit=${perPage}`,
       );
-
-      // Normalize response shape:
-      // backend may return { data: { bookings: [], pagination: {} } } or { data: [] }
       const raw = res.data.data || res.data;
       const list = raw.bookings || (Array.isArray(raw) ? raw : []);
       const pag = raw.pagination || {
@@ -54,8 +51,6 @@ export default function AdminPemesanan() {
 
       setBookingList(list);
       setPagination(pag);
-
-      // Compute summary from full list (or use backend-provided stats)
       setSummaryStats({
         total: pag.total || list.length,
         confirmed: list.filter(
@@ -103,7 +98,6 @@ export default function AdminPemesanan() {
       title="Manajemen Pemesanan"
       subtitle="Monitor seluruh booking pelatih"
     >
-      {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         {statCards.map((s, i) => (
           <motion.div
@@ -157,19 +151,13 @@ export default function AdminPemesanan() {
               <table className="w-full">
                 <thead className="bg-slate-50 dark:bg-slate-700/50">
                   <tr>
-                    {[
-                      "#",
-                      "User",
-                      "Pelatih",
-                      "Cabor",
-                      "Tanggal",
-                      "Biaya",
-                      "Status",
-                    ].map((h) => (
-                      <th key={h} className="table-header whitespace-nowrap">
-                        {h}
-                      </th>
-                    ))}
+                    {["#", "User", "Pelatih", "Cabor", "Tanggal", "Status"].map(
+                      (h) => (
+                        <th key={h} className="table-header whitespace-nowrap">
+                          {h}
+                        </th>
+                      ),
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -191,16 +179,12 @@ export default function AdminPemesanan() {
                         {b.pelatihNama || b.pelatih?.nama || "-"}
                       </td>
                       <td className="table-cell text-sm">
-                        {b.cabor ||
-                          b.pelatih?.cabor ||
-                          b.pelatih?.cabang?.nama_cabor ||
-                          "-"}
+                        {b.cabor || b.pelatih?.cabang?.nama_cabor || "-"}
                       </td>
                       <td className="table-cell text-xs text-slate-500">
-                        {b.tanggal} {b.jam}
-                      </td>
-                      <td className="table-cell font-semibold text-primary-600 dark:text-primary-400 text-sm">
-                        {formatRp(b.biaya || b.total_biaya || 0)}
+                        {b.tanggal
+                          ? new Date(b.tanggal).toLocaleDateString("id-ID")
+                          : "-"}
                       </td>
                       <td className="table-cell">
                         <StatusBadge status={b.status} />

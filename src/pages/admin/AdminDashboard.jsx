@@ -37,26 +37,22 @@ export default function AdminDashboard() {
     setLoading(true);
     setError("");
     try {
-      // FIX: was using pemainRes.data (undefined variable) instead of pelatihRes.data
       const [statsRes, pelatihRes, bookingRes] = await Promise.all([
         api.get("/api/admin/stats"),
         api.get("/api/pelatih"),
-        api.get("/api/booking"),
+        api.get("/api/admin/bookings"), // FIX: was /api/booking (tidak ada)
       ]);
 
       setStats(statsRes.data.data || statsRes.data);
-      // FIX: was pemainRes.data (typo) — now correctly pelatihRes.data
+
+      const pelatihRaw = pelatihRes.data.data || pelatihRes.data;
       setPelatihList(
-        pelatihRes.data.data?.pelatih ||
-          pelatihRes.data.pelatih ||
-          pelatihRes.data.data ||
-          [],
+        pelatihRaw.pelatih || (Array.isArray(pelatihRaw) ? pelatihRaw : []),
       );
+
+      const bookingRaw = bookingRes.data.data || bookingRes.data;
       setBookingList(
-        bookingRes.data.data?.bookings ||
-          bookingRes.data.data ||
-          bookingRes.data ||
-          [],
+        bookingRaw.bookings || (Array.isArray(bookingRaw) ? bookingRaw : []),
       );
     } catch (err) {
       console.error("❌ Error fetching dashboard:", err);
@@ -113,7 +109,6 @@ export default function AdminDashboard() {
         </motion.div>
       )}
 
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatsCard
           title="Total Pelatih"
@@ -172,7 +167,6 @@ export default function AdminDashboard() {
         />
       </div>
 
-      {/* Charts row 1 */}
       <div className="grid lg:grid-cols-3 gap-6 mb-6">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -204,7 +198,6 @@ export default function AdminDashboard() {
         </motion.div>
       </div>
 
-      {/* Charts row 2 */}
       <div className="grid lg:grid-cols-2 gap-6 mb-6">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -234,7 +227,6 @@ export default function AdminDashboard() {
         </motion.div>
       </div>
 
-      {/* Tables row */}
       <div className="grid lg:grid-cols-2 gap-6">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -291,12 +283,10 @@ export default function AdminDashboard() {
                       {b.userName || b.user?.nama || "-"}
                     </td>
                     <td className="table-cell text-slate-500 dark:text-slate-400">
-                      {b.pelatih?.nama?.split(" ")[0] ||
-                        b.pelatihNama?.split(" ")[0] ||
-                        "-"}
+                      {(b.pelatihNama || b.pelatih?.nama || "-").split(" ")[0]}
                     </td>
                     <td className="table-cell">
-                      {b.cabor || b.pelatih?.cabor || "-"}
+                      {b.cabor || b.pelatih?.cabang?.nama_cabor || "-"}
                     </td>
                     <td className="table-cell">
                       <StatusBadge status={b.status} />

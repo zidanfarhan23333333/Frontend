@@ -24,7 +24,7 @@ export function PelatihProfil() {
 
   useEffect(() => {
     api
-      .get("/pelatih/my-profile")
+      .get("/api/pelatih/my-profile")
       .then((res) => {
         const d = res.data.data || res.data;
         setForm({
@@ -44,7 +44,7 @@ export function PelatihProfil() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.put("/pelatih/my-profile", {
+      await api.put("/api/pelatih/my-profile", {
         ...form,
         pengalaman: Number(form.pengalaman),
         biaya: Number(form.biaya),
@@ -203,7 +203,7 @@ export function PelatihJadwal() {
 
   useEffect(() => {
     api
-      .get("/pelatih/my-jadwal")
+      .get("/api/pelatih/my-jadwal")
       .then((res) => setJadwal(res.data.data || res.data.jadwal || []))
       .catch(() => toast.error("Gagal memuat jadwal"))
       .finally(() => setLoading(false));
@@ -216,7 +216,7 @@ export function PelatihJadwal() {
     }
     setSubmitting(true);
     try {
-      const res = await api.post("/pelatih/my-jadwal", newJadwal);
+      const res = await api.post("/api/pelatih/my-jadwal", newJadwal);
       const created = res.data.data || res.data.jadwal;
       setJadwal((prev) => [...prev, created]);
       setShowForm(false);
@@ -231,7 +231,7 @@ export function PelatihJadwal() {
 
   const deleteJadwal = async (id) => {
     try {
-      await api.delete(`/pelatih/my-jadwal/${id}`);
+      await api.delete(`/api/pelatih/my-jadwal/${id}`);
       setJadwal((prev) => prev.filter((x) => x.id !== id));
       toast.success("Jadwal dihapus");
     } catch (err) {
@@ -385,7 +385,7 @@ export function PelatihStatus() {
 
   useEffect(() => {
     api
-      .get("/pelatih/my-stats")
+      .get("/api/pelatih/my-stats")
       .then((res) => setStats(res.data.data || res.data))
       .catch(() => toast.error("Gagal memuat status"))
       .finally(() => setLoading(false));

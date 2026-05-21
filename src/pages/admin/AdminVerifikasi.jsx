@@ -9,10 +9,9 @@ import toast from "react-hot-toast";
 
 export default function AdminVerifikasi() {
   const { api } = useAuth();
-  // FIX: was using static dummy data — now fetches from /pelatih API and patches via /pelatih/:id/verifikasi
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(null); // id of pelatih being actioned
+  const [actionLoading, setActionLoading] = useState(null);
 
   useEffect(() => {
     fetchPelatih();
@@ -21,7 +20,6 @@ export default function AdminVerifikasi() {
   const fetchPelatih = async () => {
     setLoading(true);
     try {
-      // Fetch all pelatih (no pagination — need full list for pending/verified split)
       const res = await api.get("/api/pelatih?limit=100");
       const raw = res.data.data || res.data;
       const data = raw.pelatih || (Array.isArray(raw) ? raw : []);
@@ -34,30 +32,28 @@ export default function AdminVerifikasi() {
     }
   };
 
-  // FIX: was only updating local state — now calls PATCH /pelatih/:id/verifikasi
-  // Backend patchVerifikasi handler accepts { status } and calls verifikasiPelatih(id, status)
   const updateStatus = async (id, status) => {
     setActionLoading(id);
     try {
-      await api.patch(`/api/pelatih/${id}/verifikasi`, { status });
-      // Optimistically update local state to avoid full refetch
+      // FIX: pakai /api/admin/pelatih/:id/verify (sesuai adminRoutes.js)
+      await api.patch(`/api/admin/pelatih/${id}/verify`, { status });
       setList((prev) =>
         prev.map((p) =>
           (p.pelatih_id || p.id) === id
-            ? { ...p, status_verifikasi: status, status }
+            ? { ...p, status_verifikasi: status }
             : p,
         ),
       );
       toast.success(
-        status === "terverifikasi" || status === "verified"
+        status === "terverifikasi"
           ? "Pelatih berhasil diverifikasi!"
           : "Pelatih ditolak.",
       );
     } catch (err) {
       console.error("❌ Error updating status:", err);
       toast.error(
-        err.response?.data?.error ||
-          err.response?.data?.message ||
+        err.response?.data?.message ||
+          err.response?.data?.error ||
           "Gagal memperbarui status",
       );
     } finally {
@@ -66,7 +62,6 @@ export default function AdminVerifikasi() {
   };
 
   const approve = (p) => updateStatus(p.pelatih_id || p.id, "terverifikasi");
-
   const reject = (p) => updateStatus(p.pelatih_id || p.id, "ditolak");
 
   const formatRp = (n) =>
@@ -76,20 +71,14 @@ export default function AdminVerifikasi() {
       maximumFractionDigits: 0,
     }).format(n);
 
-  // Normalize status comparison across both Indonesian and English status values
   const isPending = (p) =>
-    !p.status_verifikasi ||
-    p.status_verifikasi === "pending" ||
-    p.status_verifikasi === "menunggu" ||
-    p.status === "pending";
-
-  const isVerified = (p) =>
-    p.status_verifikasi === "terverifikasi" ||
-    p.status_verifikasi === "verified" ||
-    p.status === "verified";
+    !p.status_verifikasi || p.status_verifikasi === "pending";
+  const isVerified = (p) => p.status_verifikasi === "terverifikasi";
+  const isRejected = (p) => p.status_verifikasi === "ditolak";
 
   const pending = list.filter(isPending);
   const verified = list.filter(isVerified);
+  const rejected = list.filter(isRejected);
 
   if (loading) {
     return (
@@ -110,7 +99,7 @@ export default function AdminVerifikasi() {
       subtitle="Review dan verifikasi pendaftaran pelatih baru"
     >
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         {[
           {
             label: "Menunggu",
@@ -123,6 +112,12 @@ export default function AdminVerifikasi() {
             value: verified.length,
             icon: HiCheckBadge,
             color: "text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20",
+          },
+          {
+            label: "Ditolak",
+            value: rejected.length,
+            icon: HiXCircle,
+            color: "text-red-500 bg-red-50 dark:bg-red-900/20",
           },
           {
             label: "Total",
@@ -249,7 +244,7 @@ export default function AdminVerifikasi() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="card overflow-hidden"
+        className="card overflow-hidden mb-6"
       >
         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700">
           <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
@@ -288,12 +283,72 @@ export default function AdminVerifikasi() {
                     {(p.skorAHP || 0).toFixed(2)}
                   </p>
                 </div>
-                <StatusBadge status="verified" />
+                <StatusBadge status="terverifikasi" />
               </div>
             ))}
           </div>
         )}
       </motion.div>
+
+      {/* Rejected list */}
+      {rejected.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="card overflow-hidden"
+        >
+          <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700">
+            <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
+              <HiXCircle className="w-5 h-5 text-red-500" /> Ditolak (
+              {rejected.length})
+            </h3>
+          </div>
+          <div className="divide-y divide-slate-100 dark:divide-slate-700">
+            {rejected.map((p) => {
+              const id = p.pelatih_id || p.id;
+              const isActioning = actionLoading === id;
+              return (
+                <div key={id} className="px-6 py-3 flex items-center gap-4">
+                  <Avatar
+                    initials={
+                      p.nama
+                        ?.split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .slice(0, 2) || "P"
+                    }
+                    size="sm"
+                    id={id}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-slate-800 dark:text-slate-200 text-sm">
+                      {p.nama}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {p.cabor || p.cabang?.nama_cabor || "-"}
+                    </p>
+                  </div>
+                  {/* Bisa disetujui ulang dari sini */}
+                  <button
+                    onClick={() => approve(p)}
+                    disabled={isActioning}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-300 text-emerald-600 hover:bg-emerald-50 disabled:opacity-50 text-xs font-bold transition-colors"
+                  >
+                    {isActioning ? (
+                      <div className="w-3 h-3 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <HiCheckBadge className="w-3.5 h-3.5" />
+                    )}
+                    Setujui Ulang
+                  </button>
+                  <StatusBadge status="ditolak" />
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
     </DashboardLayout>
   );
 }
