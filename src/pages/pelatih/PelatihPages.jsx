@@ -2,9 +2,50 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { HiPencil, HiCheck, HiPlus, HiTrash } from "react-icons/hi2";
 import DashboardLayout from "../../components/layout/DashboardLayout";
+import { StatusBadge } from "../../components/ui/Badges";
 import { useAuth } from "../../context/AuthContext";
 import Avatar from "../../components/ui/Avatar";
 import toast from "react-hot-toast";
+
+// Label skala 1-5 sesuai schema Prisma
+const PENGALAMAN_LABEL = {
+  1: "1 Tempat",
+  2: "2 Tempat",
+  3: "3 Tempat",
+  4: "4 Tempat",
+  5: "5+ Tempat",
+};
+const LISENSI_LABEL = {
+  1: "Tidak Ada",
+  2: "Daerah",
+  3: "Nasional C",
+  4: "Nasional A/B",
+  5: "Internasional",
+};
+const PRESTASI_LABEL = {
+  1: "Belum Ada",
+  2: "Juara Daerah",
+  3: "Juara Nasional",
+  4: "Juara Internasional",
+  5: "Olimpiade",
+};
+const BIAYA_LABEL = {
+  1: "< Rp50rb",
+  2: "Rp50–150rb",
+  3: "Rp150–300rb",
+  4: "Rp300–500rb",
+  5: "> Rp500rb",
+};
+const SKALA_OPTIONS = [1, 2, 3, 4, 5];
+
+// Ambil profil pelatih berdasarkan user yang login
+async function fetchMyProfil(api, userName) {
+  const res = await api.get("/api/pelatih");
+  const raw = res.data.pelatih || res.data.data?.pelatih || res.data.data || [];
+  const list = Array.isArray(raw) ? raw : [];
+  // Cari berdasarkan nama user, fallback ke index 0
+  return list.find((p) => p.nama === userName) || list[0] || null;
+}
 
 // ─── PROFIL ──────────────────────────────────────────────────────────────────
 export function PelatihProfil() {
@@ -12,41 +53,62 @@ export function PelatihProfil() {
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [myId, setMyId] = useState(null);
+  const [caborList, setCaborList] = useState([]);
   const [form, setForm] = useState({
     nama: "",
-    cabor: "",
-    pengalaman: "",
-    lisensi: "",
-    biaya: "",
-    lokasi: "",
-    deskripsi: "",
+    cabor_id: "",
+    cabor_nama: "",
+    pengalaman: 1,
+    lisensi: 1,
+    prestasi: 1,
+    biaya: 1,
+    status_verifikasi: "pending",
   });
 
   useEffect(() => {
-    api
-      .get("/api/pelatih/my-profile")
-      .then((res) => {
-        const d = res.data.data || res.data;
-        setForm({
-          nama: d.nama || "",
-          cabor: d.cabang?.nama_cabor || d.cabor || "",
-          pengalaman: String(d.pengalaman || ""),
-          lisensi: String(d.lisensi || ""),
-          biaya: String(d.biaya || ""),
-          lokasi: d.lokasi || "",
-          deskripsi: d.deskripsi || "",
-        });
-      })
-      .catch(() => toast.error("Gagal memuat profil"))
-      .finally(() => setLoading(false));
+    const load = async () => {
+      try {
+        const [profil, caborRes] = await Promise.all([
+          fetchMyProfil(api, user?.nama),
+          api.get("/api/public/cabor"),
+        ]);
+
+        if (profil) {
+          setMyId(profil.pelatih_id);
+          setForm({
+            nama: profil.nama || "",
+            cabor_id: String(profil.cabor_id || ""),
+            cabor_nama: profil.cabang?.nama_cabor || "",
+            pengalaman: profil.pengalaman || 1,
+            lisensi: profil.lisensi || 1,
+            prestasi: profil.prestasi || 1,
+            biaya: profil.biaya || 1,
+            status_verifikasi: profil.status_verifikasi || "pending",
+          });
+        }
+
+        const cRaw = caborRes.data.data || caborRes.data;
+        setCaborList(Array.isArray(cRaw) ? cRaw : []);
+      } catch {
+        toast.error("Gagal memuat profil");
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
 
   const handleSave = async () => {
+    if (!myId) return toast.error("ID pelatih tidak ditemukan");
     setSaving(true);
     try {
-      await api.put("/api/pelatih/my-profile", {
-        ...form,
+      await api.put(`/api/pelatih/${myId}`, {
+        nama: form.nama,
+        cabor_id: Number(form.cabor_id),
         pengalaman: Number(form.pengalaman),
+        lisensi: Number(form.lisensi),
+        prestasi: Number(form.prestasi),
         biaya: Number(form.biaya),
       });
       setEditing(false);
@@ -57,6 +119,8 @@ export function PelatihProfil() {
       setSaving(false);
     }
   };
+
+  const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
 
   if (loading)
     return (
@@ -80,26 +144,20 @@ export function PelatihProfil() {
         animate={{ opacity: 1, y: 0 }}
         className="max-w-2xl"
       >
-        <div className="card p-6 mb-6">
+        <div className="card p-6">
           {/* Header */}
           <div className="flex items-center gap-4 mb-6">
             <Avatar
-              initials={
-                user?.initials || form.nama?.slice(0, 2).toUpperCase() || "AB"
-              }
+              initials={form.nama?.slice(0, 2).toUpperCase() || "P"}
               size="xl"
-              id={1}
+              id={myId || 1}
             />
             <div>
               <h3 className="font-display font-black text-2xl text-slate-900 dark:text-white">
                 {form.nama}
               </h3>
-              <p className="text-slate-500 dark:text-slate-400 text-sm">
-                {form.cabor} · {form.lokasi}
-              </p>
-              <span className="badge-green mt-1 inline-block">
-                Terverifikasi
-              </span>
+              <p className="text-slate-500 text-sm">{form.cabor_nama}</p>
+              <StatusBadge status={form.status_verifikasi} />
             </div>
             <button
               onClick={() => (editing ? handleSave() : setEditing(true))}
@@ -119,58 +177,92 @@ export function PelatihProfil() {
             </button>
           </div>
 
-          {/* Fields */}
           <div className="grid sm:grid-cols-2 gap-4">
+            {/* Nama */}
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-bold uppercase tracking-wide text-slate-400 mb-1.5">
+                Nama Lengkap
+              </label>
+              {editing ? (
+                <input
+                  value={form.nama}
+                  onChange={set("nama")}
+                  className="input-field py-2 text-sm"
+                />
+              ) : (
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 py-2.5 px-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+                  {form.nama}
+                </p>
+              )}
+            </div>
+
+            {/* Cabor */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide text-slate-400 mb-1.5">
+                Cabang Olahraga
+              </label>
+              {editing ? (
+                <select
+                  value={form.cabor_id}
+                  onChange={(e) => {
+                    const c = caborList.find(
+                      (x) => String(x.cabor_id) === e.target.value,
+                    );
+                    setForm((p) => ({
+                      ...p,
+                      cabor_id: e.target.value,
+                      cabor_nama: c?.nama_cabor || "",
+                    }));
+                  }}
+                  className="input-field py-2 text-sm"
+                >
+                  <option value="">Pilih cabor</option>
+                  {caborList.map((c) => (
+                    <option key={c.cabor_id} value={String(c.cabor_id)}>
+                      {c.nama_cabor}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 py-2.5 px-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+                  {form.cabor_nama || "-"}
+                </p>
+              )}
+            </div>
+
+            {/* Skala fields */}
             {[
-              ["Nama Lengkap", "nama", "text"],
-              ["Cabang Olahraga", "cabor", "text"],
-              ["Pengalaman (Tahun)", "pengalaman", "number"],
-              ["Lisensi", "lisensi", "text"],
-              ["Biaya per Sesi (Rp)", "biaya", "number"],
-              ["Lokasi", "lokasi", "text"],
-            ].map(([label, key, type]) => (
+              { key: "pengalaman", label: "Pengalaman", map: PENGALAMAN_LABEL },
+              { key: "lisensi", label: "Lisensi", map: LISENSI_LABEL },
+              { key: "prestasi", label: "Prestasi", map: PRESTASI_LABEL },
+              { key: "biaya", label: "Biaya", map: BIAYA_LABEL },
+            ].map(({ key, label, map }) => (
               <div key={key}>
                 <label className="block text-xs font-bold uppercase tracking-wide text-slate-400 mb-1.5">
                   {label}
                 </label>
                 {editing ? (
-                  <input
-                    type={type}
+                  <select
                     value={form[key]}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, [key]: e.target.value }))
-                    }
+                    onChange={set(key)}
                     className="input-field py-2 text-sm"
-                  />
+                  >
+                    {SKALA_OPTIONS.map((n) => (
+                      <option key={n} value={n}>
+                        {n} — {map[n]}
+                      </option>
+                    ))}
+                  </select>
                 ) : (
                   <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 py-2.5 px-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
-                    {key === "biaya"
-                      ? `Rp ${parseInt(form.biaya || 0).toLocaleString("id-ID")}`
-                      : form[key] || "-"}
+                    {map[form[key]] || "-"}{" "}
+                    <span className="text-slate-400 font-normal">
+                      ({form[key]}/5)
+                    </span>
                   </p>
                 )}
               </div>
             ))}
-          </div>
-
-          {/* Deskripsi */}
-          <div className="mt-4">
-            <label className="block text-xs font-bold uppercase tracking-wide text-slate-400 mb-1.5">
-              Deskripsi
-            </label>
-            {editing ? (
-              <textarea
-                value={form.deskripsi}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, deskripsi: e.target.value }))
-                }
-                className="input-field text-sm resize-none min-h-[80px]"
-              />
-            ) : (
-              <p className="text-sm text-slate-700 dark:text-slate-300 py-2.5 px-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
-                {form.deskripsi || "-"}
-              </p>
-            )}
           </div>
 
           {editing && (
@@ -190,55 +282,6 @@ export function PelatihProfil() {
 
 // ─── JADWAL ──────────────────────────────────────────────────────────────────
 export function PelatihJadwal() {
-  const { api } = useAuth();
-  const [jadwal, setJadwal] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [newJadwal, setNewJadwal] = useState({
-    hari: "Senin",
-    jam: "",
-    lokasi: "",
-  });
-
-  useEffect(() => {
-    api
-      .get("/api/pelatih/my-jadwal")
-      .then((res) => setJadwal(res.data.data || res.data.jadwal || []))
-      .catch(() => toast.error("Gagal memuat jadwal"))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const addJadwal = async () => {
-    if (!newJadwal.jam || !newJadwal.lokasi) {
-      toast.error("Lengkapi data jadwal");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const res = await api.post("/api/pelatih/my-jadwal", newJadwal);
-      const created = res.data.data || res.data.jadwal;
-      setJadwal((prev) => [...prev, created]);
-      setShowForm(false);
-      setNewJadwal({ hari: "Senin", jam: "", lokasi: "" });
-      toast.success("Jadwal ditambahkan!");
-    } catch (err) {
-      toast.error(err.response?.data?.error || "Gagal menambah jadwal");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const deleteJadwal = async (id) => {
-    try {
-      await api.delete(`/api/pelatih/my-jadwal/${id}`);
-      setJadwal((prev) => prev.filter((x) => x.id !== id));
-      toast.success("Jadwal dihapus");
-    } catch (err) {
-      toast.error(err.response?.data?.error || "Gagal menghapus jadwal");
-    }
-  };
-
   return (
     <DashboardLayout
       title="Jadwal Latihan"
@@ -248,129 +291,11 @@ export function PelatihJadwal() {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="card overflow-hidden"
+          className="card p-8 text-center"
         >
-          {/* Header */}
-          <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-            <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">
-              Jadwal Aktif
-            </h3>
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="btn-primary text-sm py-2"
-            >
-              <HiPlus className="w-4 h-4" /> Tambah
-            </button>
-          </div>
-
-          {/* Form tambah */}
-          {showForm && (
-            <div className="px-6 py-4 bg-primary-50 dark:bg-primary-900/10 border-b border-slate-100 dark:border-slate-700">
-              <div className="grid sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 block">
-                    Hari
-                  </label>
-                  <select
-                    value={newJadwal.hari}
-                    onChange={(e) =>
-                      setNewJadwal((p) => ({ ...p, hari: e.target.value }))
-                    }
-                    className="input-field py-2 text-sm"
-                  >
-                    {[
-                      "Senin",
-                      "Selasa",
-                      "Rabu",
-                      "Kamis",
-                      "Jumat",
-                      "Sabtu",
-                      "Minggu",
-                    ].map((h) => (
-                      <option key={h}>{h}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 block">
-                    Jam
-                  </label>
-                  <input
-                    value={newJadwal.jam}
-                    onChange={(e) =>
-                      setNewJadwal((p) => ({ ...p, jam: e.target.value }))
-                    }
-                    className="input-field py-2 text-sm"
-                    placeholder="08:00-10:00"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 block">
-                    Lokasi
-                  </label>
-                  <input
-                    value={newJadwal.lokasi}
-                    onChange={(e) =>
-                      setNewJadwal((p) => ({ ...p, lokasi: e.target.value }))
-                    }
-                    className="input-field py-2 text-sm"
-                    placeholder="GOR UNY"
-                  />
-                </div>
-              </div>
-              <button
-                onClick={addJadwal}
-                disabled={submitting}
-                className="btn-primary mt-3 text-sm py-2"
-              >
-                {submitting ? "Menyimpan..." : "Simpan Jadwal"}
-              </button>
-            </div>
-          )}
-
-          {/* List */}
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : jadwal.length === 0 ? (
-            <div className="py-12 text-center text-slate-400 text-sm">
-              Belum ada jadwal
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-100 dark:divide-slate-700">
-              {jadwal.map((j, i) => (
-                <motion.div
-                  key={j.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="px-6 py-4 flex items-center gap-4"
-                >
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-500 to-indigo-600 flex items-center justify-center text-white text-xs font-black flex-shrink-0">
-                    {j.hari.slice(0, 3)}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-slate-800 dark:text-slate-100 text-sm">
-                      {j.hari} · {j.jam}
-                    </p>
-                    <p className="text-xs text-slate-400">{j.lokasi}</p>
-                  </div>
-                  <span
-                    className={`badge ${j.status === "available" ? "badge-green" : "badge-red"}`}
-                  >
-                    {j.status === "available" ? "Tersedia" : "Penuh"}
-                  </span>
-                  <button
-                    onClick={() => deleteJadwal(j.id)}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-100 dark:hover:bg-red-900/20 text-red-400 transition-colors"
-                  >
-                    <HiTrash className="w-4 h-4" />
-                  </button>
-                </motion.div>
-              ))}
-            </div>
-          )}
+          <p className="text-slate-400 text-sm">
+            Fitur jadwal belum tersedia — tabel jadwal belum ada di schema.
+          </p>
         </motion.div>
       </div>
     </DashboardLayout>
@@ -379,49 +304,68 @@ export function PelatihJadwal() {
 
 // ─── STATUS ──────────────────────────────────────────────────────────────────
 export function PelatihStatus() {
-  const { api } = useAuth();
-  const [stats, setStats] = useState(null);
+  const { user, api } = useAuth();
+  const [profil, setProfil] = useState(null);
+  const [ranking, setRanking] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api
-      .get("/api/pelatih/my-stats")
-      .then((res) => setStats(res.data.data || res.data))
-      .catch(() => toast.error("Gagal memuat status"))
-      .finally(() => setLoading(false));
+    const load = async () => {
+      try {
+        const [myProfil, rankingRes] = await Promise.all([
+          fetchMyProfil(api, user?.nama),
+          api.get("/api/public/ranking"),
+        ]);
+
+        setProfil(myProfil);
+
+        const rankRaw = rankingRes.data.data || rankingRes.data;
+        const rankList = rankRaw.pelatih || [];
+        const idx = rankList.findIndex(
+          (p) => p.pelatih_id === myProfil?.pelatih_id,
+        );
+        setRanking({
+          rank: idx >= 0 ? idx + 1 : null,
+          skorAHP: idx >= 0 ? rankList[idx].skorAHP : 0,
+        });
+      } catch {
+        toast.error("Gagal memuat status");
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
 
-  const s = stats || { ranking: "-", skorAHP: 0, pengalaman: 0, lisensi: "-" };
+  const p = profil;
 
   const komponen = [
     {
       label: "Pengalaman",
       bobot: "35%",
-      nilai: `${s.pengalaman || 0} Tahun`,
-      progress: s.skorKomponen?.pengalaman ?? 0,
+      nilai: PENGALAMAN_LABEL[p?.pengalaman] || "-",
+      progress: (p?.pengalaman || 0) / 5,
       color: "from-primary-500 to-primary-700",
     },
     {
       label: "Lisensi",
       bobot: "25%",
-      nilai: s.lisensi || "-",
-      progress: s.skorKomponen?.lisensi ?? 0,
+      nilai: LISENSI_LABEL[p?.lisensi] || "-",
+      progress: (p?.lisensi || 0) / 5,
       color: "from-indigo-500 to-indigo-700",
     },
     {
       label: "Prestasi",
       bobot: "25%",
-      nilai: s.prestasi || "-",
-      progress: s.skorKomponen?.prestasi ?? 0,
+      nilai: PRESTASI_LABEL[p?.prestasi] || "-",
+      progress: (p?.prestasi || 0) / 5,
       color: "from-cyan-400 to-cyan-600",
     },
     {
       label: "Biaya",
       bobot: "15%",
-      nilai: s.biaya
-        ? `Rp ${Number(s.biaya).toLocaleString("id-ID")}/sesi`
-        : "-",
-      progress: s.skorKomponen?.biaya ?? 0,
+      nilai: BIAYA_LABEL[p?.biaya] || "-",
+      progress: (p?.biaya || 0) / 5,
       color: "from-emerald-400 to-emerald-600",
     },
   ];
@@ -479,13 +423,16 @@ export function PelatihStatus() {
               </div>
             ))}
           </div>
+
           <div className="mt-8 p-4 bg-gradient-to-r from-primary-50 to-indigo-50 dark:from-primary-900/20 dark:to-indigo-900/20 rounded-2xl text-center">
             <p className="text-xs text-slate-400 mb-1">Skor AHP Akhir</p>
-            <p className="text-5xl font-display font-black gradient-text">
-              {typeof s.skorAHP === "number" ? s.skorAHP.toFixed(2) : "0.00"}
+            <p className="text-5xl font-display font-black text-primary-700 dark:text-primary-400">
+              {ranking?.skorAHP?.toFixed(2) || "0.00"}
             </p>
             <p className="text-sm text-amber-500 font-bold mt-2">
-              🏆 Ranking #{s.ranking} Nasional
+              {ranking?.rank
+                ? `🏆 Ranking #${ranking.rank} Nasional`
+                : "Belum masuk ranking"}
             </p>
           </div>
         </motion.div>

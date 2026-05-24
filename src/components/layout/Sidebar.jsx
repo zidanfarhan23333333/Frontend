@@ -5,19 +5,16 @@ import {
   HiTrophy,
   HiSquares2X2,
   HiUsers,
-  HiUserGroup,
   HiCalendarDays,
   HiMagnifyingGlass,
   HiClipboardDocumentList,
   HiCheckBadge,
   HiPresentationChartBar,
-  HiCog6Tooth,
   HiArrowLeftOnRectangle,
   HiChevronLeft,
   HiChevronRight,
   HiUser,
   HiStar,
-  HiBars3,
 } from "react-icons/hi2";
 import { useAuth } from "../../context/AuthContext";
 import ThemeToggle from "../ui/ThemeToggle";
@@ -49,6 +46,51 @@ const userLinks = [
   },
 ];
 
+// Logo SVG — icon PNG + wordmark teks
+function LogoFull() {
+  return (
+    <div className="flex items-center gap-3">
+      <img
+        src={LOGOSF}
+        alt="SportCoach"
+        className="h-10 w-10 object-contain flex-shrink-0"
+      />
+      <div className="flex flex-col leading-tight">
+        <span
+          style={{
+            fontWeight: 700,
+            fontSize: "17px",
+            letterSpacing: "-0.3px",
+            color: "white",
+            lineHeight: 1.1,
+          }}
+        >
+          Sport<span style={{ color: "#F59E0B" }}>Coach</span>
+        </span>
+        <span
+          style={{
+            fontSize: "9px",
+            letterSpacing: "1.8px",
+            color: "rgba(255,255,255,0.45)",
+            fontWeight: 500,
+            lineHeight: 1,
+            marginTop: "3px",
+            textTransform: "uppercase",
+          }}
+        >
+          Sistem Rekomendasi Pelatih
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function LogoCollapsed() {
+  return (
+    <img src={LOGOSF} alt="SportCoach" className="h-9 w-9 object-contain" />
+  );
+}
+
 export default function Sidebar({ mobileOpen, onMobileClose }) {
   const [collapsed, setCollapsed] = useState(false);
   const { user, logout } = useAuth();
@@ -72,25 +114,11 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
       {/* Logo */}
       <div
         className={clsx(
-          "flex items-center justify-center px-4 py-5 border-b border-white/10",
-          collapsed && !mobile && "px-2",
+          "flex items-center px-4 py-5 border-b border-white/10",
+          collapsed && !mobile ? "justify-center px-2" : "justify-start",
         )}
       >
-        {collapsed && !mobile ? (
-          // Tampilan collapsed: hanya icon kecil
-          <img
-            src={LOGOSF}
-            alt="SportCoach Logo"
-            className="h-8 w-8 object-contain"
-          />
-        ) : (
-          // Tampilan full: logo penuh
-          <img
-            src={LOGOSF}
-            alt="SportCoach Logo"
-            className="h-10 w-auto object-contain"
-          />
-        )}
+        {collapsed && !mobile ? <LogoCollapsed /> : <LogoFull />}
       </div>
 
       {/* Role badge */}
