@@ -7,29 +7,18 @@ import toast from "react-hot-toast";
 
 const steps = ["Data Diri", "Keahlian", "Konfirmasi"];
 
-// Konversi range harga → skala 1-5 (semakin murah = skor lebih tinggi)
-function hargaKeSkala(min, max) {
-  const rata = (Number(min) + Number(max)) / 2;
-  if (rata < 50_000) return 5;
-  if (rata < 150_000) return 4;
-  if (rata < 300_000) return 3;
-  if (rata < 500_000) return 2;
-  return 1;
-}
-
-// Hitung poin pengalaman dari jumlah baris teks (min 1, max 5)
-function hitungPengalaman(teks) {
-  if (!teks?.trim()) return 1;
-  const baris = teks.split("\n").filter((b) => b.trim().length > 0);
-  return Math.min(5, Math.max(1, baris.length));
-}
+const REDIRECT_MAP = {
+  admin: "/admin/dashboard",
+  pelatih: "/pelatih/dashboard",
+  user: "/user/dashboard",
+};
 
 function validateStep(step, form) {
   if (step === 0) {
     if (!form.nama.trim()) return "Nama lengkap wajib diisi";
     if (!form.email.trim()) return "Email wajib diisi";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-      return "Format email tidak valid";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) return "Format email tidak valid";
     if (!form.password) return "Password wajib diisi";
     if (form.password.length < 6) return "Password minimal 6 karakter";
     if (!form.domisili.trim()) return "Domisili wajib diisi";
@@ -42,26 +31,33 @@ function validateStep(step, form) {
     if (!form.prestasi) return "Level prestasi wajib dipilih";
     if (!form.harga_min) return "Harga minimum wajib diisi";
     if (!form.harga_max) return "Harga maksimum wajib diisi";
-    if (Number(form.harga_min) > Number(form.harga_max))
-      return "Harga minimum tidak boleh lebih besar dari harga maksimum";
   }
   return null;
+}
+
+function hargaKeSkala(min, max) {
+  const rata = (Number(min) + Number(max)) / 2;
+  if (rata < 50000) return 5;
+  if (rata < 150000) return 4;
+  if (rata < 300000) return 3;
+  if (rata < 500000) return 2;
+  return 1;
 }
 
 export default function PelatihRegisterPage() {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [caborList, setCaborList] = useState([]); // fetch dari backend
-
+  const [caborList, setCaborList] = useState([]);
   const [form, setForm] = useState({
     nama: "",
     email: "",
     password: "",
     umur: "",
     domisili: "",
-    cabor_id: "", // ID langsung dari backend
-    cabor_nama: "", // hanya untuk tampilan
+    cabor_id: "",
+    cabor_nama: "",
+    spesialis: "",
     pengalaman_melatih: "",
     lisensi: "",
     prestasi: "",
@@ -70,16 +66,16 @@ export default function PelatihRegisterPage() {
     deskripsi: "",
   });
 
-  const { register, api } = useAuth();
+  const { register, login, api } = useAuth();
   const navigate = useNavigate();
 
-  // Fetch cabor dari backend — tidak lagi pakai dummy/hardcoded map
+  // Fetch cabor dari backend
   useEffect(() => {
     api
-      .get("/api/admin/cabor")
+      .get("/api/cabor")
       .then((res) => {
-        const raw = res.data.data || res.data;
-        setCaborList(Array.isArray(raw) ? raw : []);
+        const data = res.data.data || res.data;
+        setCaborList(Array.isArray(data) ? data : []);
       })
       .catch(() => toast.error("Gagal memuat daftar cabor"));
   }, []);
@@ -108,34 +104,39 @@ export default function PelatihRegisterPage() {
     setLoading(true);
     setError("");
     try {
-      // 1. Register user role pelatih
-      // register() TIDAK menyimpan token (lihat AuthContext) — kita perlu login manual setelahnya
+      const jumlahEntri = form.pengalaman_melatih
+        .split("\n")
+        .filter(Boolean).length;
+      const pengalamanSkala = Math.min(5, Math.max(1, jumlahEntri));
+
       await register(
-        { nama: form.nama, email: form.email, password: form.password },
+        {
+          nama: form.nama,
+          email: form.email,
+          password: form.password,
+          cabor: form.cabor_nama,
+          pengalaman: pengalamanSkala,
+          lisensi: parseInt(form.lisensi) || 1,
+          prestasi: parseInt(form.prestasi) || 1,
+          biaya: hargaKeSkala(form.harga_min, form.harga_max),
+          deskripsi: form.deskripsi || null,
+          spesialis: form.spesialis || null,
+          domisili: form.domisili || null,
+          pengalaman_melatih: form.pengalaman_melatih || null,
+          harga_min: form.harga_min ? parseInt(form.harga_min) : null,
+          harga_max: form.harga_max ? parseInt(form.harga_max) : null,
+        },
         "pelatih",
       );
 
-      // 2. Login manual untuk dapatkan token
-      const loginRes = await api.post("/auth/login", {
+      const userData = await login({
         email: form.email,
         password: form.password,
       });
-      const { token, user: userData } = loginRes.data.data ?? loginRes.data;
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(userData));
-
-      // 3. Buat profil pelatih — token sudah tersimpan, interceptor akan attach otomatis
-      await api.post("/api/pelatih", {
-        nama: form.nama,
-        cabor_id: Number(form.cabor_id),
-        pengalaman: hitungPengalaman(form.pengalaman_melatih),
-        lisensi: Number(form.lisensi),
-        prestasi: Number(form.prestasi),
-        biaya: hargaKeSkala(form.harga_min, form.harga_max),
-      });
-
       toast.success("Pendaftaran berhasil! Menunggu verifikasi admin.");
-      navigate("/pelatih/dashboard", { replace: true });
+      navigate(REDIRECT_MAP[userData.role] ?? "/pelatih/dashboard", {
+        replace: true,
+      });
     } catch (err) {
       const msg =
         err.response?.data?.message ||
@@ -204,6 +205,7 @@ export default function PelatihRegisterPage() {
         </div>
 
         <div className="card p-8">
+          {/* Error banner */}
           {error && (
             <motion.div
               initial={{ opacity: 0, y: -8 }}
@@ -252,7 +254,7 @@ export default function PelatihRegisterPage() {
                 Keahlian & Kompetensi
               </h3>
 
-              {/* Cabor — dari backend, bukan dummy */}
+              {/* Cabang Olahraga */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Cabang Olahraga
@@ -270,14 +272,28 @@ export default function PelatihRegisterPage() {
                 >
                   <option value="">Pilih Cabang Olahraga</option>
                   {caborList.map((c) => (
-                    <option key={c.cabor_id} value={String(c.cabor_id)}>
+                    <option key={c.cabor_id} value={c.cabor_id}>
                       {c.nama_cabor}
                     </option>
                   ))}
                 </select>
               </div>
 
-              {/* Pengalaman */}
+              {/* Spesialis */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Spesialis (opsional)
+                </label>
+                <input
+                  type="text"
+                  value={form.spesialis}
+                  onChange={(e) => set("spesialis", e.target.value)}
+                  className="input-field"
+                  placeholder="Antar Sekolah, Club, dan Daerah"
+                />
+              </div>
+
+              {/* Pengalaman Melatih */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Pengalaman Melatih
@@ -289,18 +305,28 @@ export default function PelatihRegisterPage() {
                 <textarea
                   value={form.pengalaman_melatih}
                   onChange={(e) => set("pengalaman_melatih", e.target.value)}
-                  className="input-field min-h-[120px] resize-none"
+                  className="input-field min-h-[140px] resize-none"
                   placeholder={`SD N Pucungrejo 1\nSMP IT Ihsanul Fikri\nTIM Putra U19 KAB. Magelang`}
                 />
                 {form.pengalaman_melatih && (
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 font-semibold">
-                    = {hitungPengalaman(form.pengalaman_melatih)} poin
-                    pengalaman
+                  <p className="text-xs text-primary-600 mt-1">
+                    {Math.min(
+                      5,
+                      form.pengalaman_melatih.split("\n").filter(Boolean)
+                        .length,
+                    )}{" "}
+                    entri terdeteksi → nilai pengalaman:{" "}
+                    {Math.min(
+                      5,
+                      form.pengalaman_melatih.split("\n").filter(Boolean)
+                        .length,
+                    )}
+                    /5
                   </p>
                 )}
               </div>
 
-              {/* Lisensi */}
+              {/* Level Lisensi */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Level Lisensi
@@ -311,15 +337,15 @@ export default function PelatihRegisterPage() {
                   className="input-field"
                 >
                   <option value="">Pilih level lisensi</option>
-                  <option value="1">1 – Belum ada lisensi</option>
-                  <option value="2">2 – Lisensi Daerah</option>
-                  <option value="3">3 – Lisensi Nasional C</option>
-                  <option value="4">4 – Lisensi Nasional A/B</option>
-                  <option value="5">5 – Lisensi Internasional</option>
+                  <option value="1">1 - Belum ada lisensi</option>
+                  <option value="2">2 - Lisensi Daerah</option>
+                  <option value="3">3 - Lisensi Nasional C</option>
+                  <option value="4">4 - Lisensi Nasional A/B</option>
+                  <option value="5">5 - Lisensi Internasional</option>
                 </select>
               </div>
 
-              {/* Prestasi */}
+              {/* Level Prestasi */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Level Prestasi
@@ -330,15 +356,15 @@ export default function PelatihRegisterPage() {
                   className="input-field"
                 >
                   <option value="">Pilih level prestasi</option>
-                  <option value="1">1 – Belum ada prestasi</option>
-                  <option value="2">2 – Juara Daerah / Provinsi</option>
-                  <option value="3">3 – Juara Nasional</option>
-                  <option value="4">4 – Juara Internasional</option>
-                  <option value="5">5 – Olimpiade / Kejuaraan Dunia</option>
+                  <option value="1">1 - Belum ada prestasi</option>
+                  <option value="2">2 - Juara Daerah / Provinsi</option>
+                  <option value="3">3 - Juara Nasional</option>
+                  <option value="4">4 - Juara Internasional</option>
+                  <option value="5">5 - Olimpiade / Kejuaraan Dunia</option>
                 </select>
               </div>
 
-              {/* Harga */}
+              {/* Range Harga */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Range Harga per Pertemuan (Rp)
@@ -365,15 +391,6 @@ export default function PelatihRegisterPage() {
                     />
                   </div>
                 </div>
-                {form.harga_min && form.harga_max && (
-                  <p className="text-xs text-slate-400 mt-1.5">
-                    Skala biaya AHP:{" "}
-                    <span className="font-bold text-primary-600">
-                      {hargaKeSkala(form.harga_min, form.harga_max)} / 5
-                    </span>{" "}
-                    (semakin murah = skor lebih tinggi)
-                  </p>
-                )}
               </div>
 
               {/* Deskripsi */}
@@ -397,43 +414,34 @@ export default function PelatihRegisterPage() {
               <h3 className="font-display font-bold text-xl text-slate-900 dark:text-white mb-4">
                 Konfirmasi Data
               </h3>
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-                Data yang disimpan ke database
-              </p>
-              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-2xl overflow-hidden mb-4">
+              <div className="space-y-3 mb-6">
                 {[
                   ["Nama", form.nama],
                   ["Email", form.email],
+                  ["Umur", form.umur ? form.umur + " Tahun" : "-"],
                   ["Domisili", form.domisili],
+                  ["Cabang Olahraga", form.cabor_nama],
+                  ["Spesialis", form.spesialis || "-"],
                   [
-                    "Cabang Olahraga",
-                    form.cabor_nama || `ID: ${form.cabor_id}`,
-                  ],
-                  [
-                    "Pengalaman (poin)",
-                    `${hitungPengalaman(form.pengalaman_melatih)} / 5`,
-                  ],
-                  [
-                    "Lisensi (level)",
+                    "Level Lisensi",
                     form.lisensi ? `Level ${form.lisensi}` : "-",
                   ],
                   [
-                    "Prestasi (level)",
+                    "Level Prestasi",
                     form.prestasi ? `Level ${form.prestasi}` : "-",
                   ],
                   [
-                    "Biaya (skala AHP)",
+                    "Range Harga",
                     form.harga_min && form.harga_max
-                      ? `${hargaKeSkala(form.harga_min, form.harga_max)} / 5  (Rp${Number(form.harga_min).toLocaleString("id-ID")}–Rp${Number(form.harga_max).toLocaleString("id-ID")})`
+                      ? `Rp${Number(form.harga_min).toLocaleString("id-ID")} - Rp${Number(form.harga_max).toLocaleString("id-ID")}`
                       : "-",
                   ],
-                  ["Status", "Menunggu Verifikasi Admin"],
                 ].map(([k, v]) => (
                   <div
                     key={k}
-                    className="flex justify-between items-start px-4 py-2.5 border-b border-slate-200 dark:border-slate-600 last:border-0"
+                    className="flex justify-between items-start py-2 border-b border-slate-100 dark:border-slate-700 last:border-0"
                   >
-                    <span className="text-xs text-slate-400 font-medium flex-shrink-0">
+                    <span className="text-sm text-slate-500 dark:text-slate-400">
                       {k}
                     </span>
                     <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 text-right ml-4">
@@ -443,12 +451,13 @@ export default function PelatihRegisterPage() {
                 ))}
               </div>
 
+              {/* Preview pengalaman melatih */}
               {form.pengalaman_melatih && (
                 <div className="mb-4">
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-                    Daftar Pengalaman Melatih
+                  <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-2">
+                    Pengalaman Melatih:
                   </p>
-                  <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl max-h-36 overflow-y-auto">
+                  <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl max-h-40 overflow-y-auto">
                     {form.pengalaman_melatih
                       .split("\n")
                       .filter(Boolean)
@@ -466,8 +475,9 @@ export default function PelatihRegisterPage() {
 
               <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800/30">
                 <p className="text-xs text-amber-700 dark:text-amber-300">
-                  ⚠️ Setelah mendaftar, akun Anda menunggu verifikasi admin (1–3
-                  hari kerja).
+                  Setelah mendaftar, akun Anda akan menunggu verifikasi dari
+                  admin (1-3 hari kerja). Data profil bisa diupdate di dashboard
+                  setelah login.
                 </p>
               </div>
             </div>
@@ -499,32 +509,7 @@ export default function PelatihRegisterPage() {
                 whileTap={{ scale: 0.98 }}
                 className="btn-primary flex-1 justify-center disabled:opacity-60"
               >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <svg
-                      className="w-4 h-4 animate-spin"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8v8H4z"
-                      />
-                    </svg>
-                    Mendaftar...
-                  </span>
-                ) : (
-                  "Daftar Sekarang"
-                )}
+                {loading ? "Mendaftar..." : "Daftar Sekarang"}
               </motion.button>
             )}
           </div>

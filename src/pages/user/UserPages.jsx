@@ -16,17 +16,16 @@ import {
   HiFire,
   HiXMark,
   HiChevronRight,
-  HiChevronLeft,
   HiUsers,
 } from "react-icons/hi2";
 import UserLayout from "../../components/layout/UserLayout";
 import Avatar from "../../components/ui/Avatar";
-import { StatusBadge } from "../../components/ui/Badges";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 import clsx from "clsx";
 
 const sf = { fontFamily: "var(--font-sf)" };
+
 const formatRp = (n) =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -60,8 +59,7 @@ function hitungSkorAHP(pelatihList) {
       ),
       rating: p.rating ?? 0,
       totalBooking: p.totalBooking ?? 0,
-      lokasi: p.lokasi || "-",
-      lisensiLabel: p.lisensiLabel || `Level ${p.lisensi}`,
+      lokasi: p.domisili || p.lokasi || "-",
       color:
         CABOR_COLORS[p.cabang?.nama_cabor] || "from-blue-400 to-indigo-500",
     }))
@@ -70,15 +68,193 @@ function hitungSkorAHP(pelatihList) {
 }
 
 const CABOR_COLORS = {
+  Badminton: "from-emerald-400 to-teal-500",
   "Bulu Tangkis": "from-emerald-400 to-teal-500",
   Renang: "from-blue-400 to-cyan-500",
   Basket: "from-orange-400 to-red-500",
   Futsal: "from-green-400 to-emerald-600",
+  "Sepak Bola": "from-green-500 to-emerald-700",
   Karate: "from-red-500 to-rose-600",
   Atletik: "from-amber-400 to-orange-500",
+  Voli: "from-yellow-400 to-amber-500",
   "Bola Voli": "from-yellow-400 to-amber-500",
   "Tenis Meja": "from-red-400 to-rose-500",
 };
+
+const HARI_ORDER = [
+  "Senin",
+  "Selasa",
+  "Rabu",
+  "Kamis",
+  "Jumat",
+  "Sabtu",
+  "Minggu",
+];
+
+const HARI_COLOR_USER = {
+  Senin: "bg-blue-50 text-blue-600 border border-blue-100",
+  Selasa: "bg-violet-50 text-violet-600 border border-violet-100",
+  Rabu: "bg-emerald-50 text-emerald-600 border border-emerald-100",
+  Kamis: "bg-amber-50 text-amber-600 border border-amber-100",
+  Jumat: "bg-orange-50 text-orange-600 border border-orange-100",
+  Sabtu: "bg-pink-50 text-pink-600 border border-pink-100",
+  Minggu: "bg-red-50 text-red-600 border border-red-100",
+};
+
+function JadwalTersediaSection({ pelatihId, api }) {
+  const [jadwal, setJadwal] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!pelatihId) return;
+    (async () => {
+      try {
+        const res = await api.get(`/api/public/pelatih/${pelatihId}/jadwal`);
+        const raw = res.data.data || res.data.jadwal || res.data || [];
+        const available = (Array.isArray(raw) ? raw : []).filter(
+          (j) => j.status === "available",
+        );
+        const sorted = available.sort(
+          (a, b) => HARI_ORDER.indexOf(a.hari) - HARI_ORDER.indexOf(b.hari),
+        );
+        setJadwal(sorted);
+      } catch {
+        setJadwal([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [pelatihId]);
+
+  if (loading)
+    return (
+      <div className="flex items-center gap-2 text-[#aeaeb2] text-[13px] py-2">
+        <div className="w-4 h-4 border-2 border-[#d0d0d0] border-t-transparent rounded-full animate-spin" />
+        Memuat jadwal...
+      </div>
+    );
+
+  if (!jadwal.length)
+    return (
+      <div className="flex flex-col items-center justify-center py-6 text-center">
+        <HiCalendarDays className="w-8 h-8 text-[#d0d0d0] mb-2" />
+        <p className="text-[13px] text-[#aeaeb2] font-medium">
+          Belum ada jadwal tersedia
+        </p>
+        <p className="text-[11px] text-[#c8c8c8] mt-0.5">
+          Pelatih belum menambahkan jadwal sesi
+        </p>
+      </div>
+    );
+
+  const grouped = HARI_ORDER.reduce((acc, hari) => {
+    const items = jadwal.filter((j) => j.hari === hari);
+    if (items.length) acc[hari] = items;
+    return acc;
+  }, {});
+
+  return (
+    <div className="space-y-3">
+      {Object.entries(grouped).map(([hari, items], gi) => (
+        <motion.div
+          key={hari}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: gi * 0.05 }}
+        >
+          <span
+            className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold mb-2 ${HARI_COLOR_USER[hari]}`}
+          >
+            {hari}
+          </span>
+          <div className="space-y-1.5">
+            {items.map((j) => (
+              <div
+                key={j.jadwal_id}
+                className="flex items-center gap-3 bg-[#f5f5f7] rounded-xl px-3 py-2.5"
+              >
+                <HiClock className="w-3.5 h-3.5 text-[#aeaeb2] flex-shrink-0" />
+                <span className="text-[13px] font-semibold text-[#0a0a0a]">
+                  {j.jam_mulai} – {j.jam_selesai}
+                </span>
+                <span className="flex items-center gap-1 text-[11px] text-[#aeaeb2] ml-auto">
+                  <HiMapPin className="w-3 h-3 flex-shrink-0" />
+                  <span className="truncate max-w-[120px]">{j.lokasi}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+function JadwalBookingPanel({ pelatihId, api }) {
+  const [jadwal, setJadwal] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!pelatihId) return;
+    (async () => {
+      try {
+        const res = await api.get(`/api/public/pelatih/${pelatihId}/jadwal`);
+        const raw = res.data.data || res.data.jadwal || res.data || [];
+        setJadwal(
+          (Array.isArray(raw) ? raw : []).filter(
+            (j) => j.status === "available",
+          ),
+        );
+      } catch {
+        setJadwal([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [pelatihId]);
+
+  if (loading)
+    return (
+      <div className="flex items-center justify-center py-4">
+        <div className="w-4 h-4 border-2 border-[#d0d0d0] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+
+  if (!jadwal.length)
+    return (
+      <p className="text-[12px] text-[#aeaeb2] text-center py-4">
+        Belum ada jadwal tersedia
+      </p>
+    );
+
+  return (
+    <div className="space-y-1.5">
+      {jadwal.slice(0, 5).map((j) => (
+        <div
+          key={j.jadwal_id}
+          className="flex items-center gap-2 px-3 py-2 bg-[#f5f5f7] rounded-xl"
+        >
+          <span
+            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${HARI_COLOR_USER[j.hari]}`}
+          >
+            {j.hari}
+          </span>
+          <span className="text-[12px] font-semibold text-[#0a0a0a]">
+            {j.jam_mulai}–{j.jam_selesai}
+          </span>
+          <span className="text-[11px] text-[#aeaeb2] ml-auto truncate max-w-[80px]">
+            {j.lokasi}
+          </span>
+        </div>
+      ))}
+      {jadwal.length > 5 && (
+        <p className="text-[11px] text-[#aeaeb2] text-center">
+          +{jadwal.length - 5} jadwal lainnya
+        </p>
+      )}
+    </div>
+  );
+}
 
 function StatusPill({ status }) {
   const map = {
@@ -149,11 +325,11 @@ function CoachCard({ coach, delay = 0, onFav, isFav }) {
         <div className="text-[12px] text-[#aeaeb2] space-y-1 mb-3">
           <div className="flex items-center gap-1.5">
             <HiMapPin className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>{coach.lokasi}</span>
+            <span className="truncate">{coach.lokasi}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <HiTrophy className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="truncate">Level {coach.lisensi}</span>
+            <span>Level {coach.lisensi}</span>
           </div>
         </div>
         <div className="mb-3">
@@ -173,7 +349,9 @@ function CoachCard({ coach, delay = 0, onFav, isFav }) {
         <div className="flex items-center justify-between pt-3 border-t border-[#f5f5f7]">
           <div>
             <p className="text-[15px] font-bold text-[#0a0a0a] tracking-[-0.3px]">
-              {formatRp(coach.biaya)}
+              {coach.harga_min && coach.harga_max
+                ? `${formatRp(coach.harga_min)} – ${formatRp(coach.harga_max)}`
+                : formatRp(coach.biaya)}
             </p>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="flex items-center gap-0.5 text-[11px] text-[#aeaeb2]">
@@ -198,9 +376,6 @@ function CoachCard({ coach, delay = 0, onFav, isFav }) {
   );
 }
 
-/* ══════════════════════════════════════════
-   USER DASHBOARD
-══════════════════════════════════════════ */
 export function UserDashboard() {
   const { user, api } = useAuth();
   const [coaches, setCoaches] = useState([]);
@@ -230,14 +405,11 @@ export function UserDashboard() {
             list.filter((p) => p.status_verifikasi === "terverifikasi"),
           ),
         );
-
         const rawBooking = bookingRes?.data?.data || bookingRes?.data || [];
         setBookings(
           Array.isArray(rawBooking) ? rawBooking : rawBooking.bookings || [],
         );
-
         setStats(statsRes?.data?.data || statsRes?.data || null);
-
         const rawCabor = caborRes?.data?.data || caborRes?.data || [];
         setCaborList(Array.isArray(rawCabor) ? rawCabor : []);
       })
@@ -277,7 +449,6 @@ export function UserDashboard() {
             </div>
           </Link>
 
-          {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
             {[
               {
@@ -321,7 +492,6 @@ export function UserDashboard() {
             ))}
           </div>
 
-          {/* Category chips */}
           <div className="mb-6">
             <h2 className="text-[15px] font-semibold text-[#0a0a0a] tracking-[-0.2px] mb-3">
               Kategori
@@ -347,7 +517,6 @@ export function UserDashboard() {
             </div>
           </div>
 
-          {/* Coach grid */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-[15px] font-semibold text-[#0a0a0a] tracking-[-0.2px]">
@@ -388,7 +557,6 @@ export function UserDashboard() {
             )}
           </div>
 
-          {/* Promo */}
           <div className="rounded-2xl bg-[#0a0a0a] p-6 flex items-center justify-between relative overflow-hidden">
             <div className="absolute right-6 text-6xl opacity-10 select-none">
               🏆
@@ -412,7 +580,6 @@ export function UserDashboard() {
           </div>
         </div>
 
-        {/* Right panel */}
         <div className="hidden xl:flex w-72 flex-col bg-white border-l border-[#f0f0f0] overflow-y-auto flex-shrink-0">
           <div className="p-5">
             <div className="mb-6">
@@ -523,9 +690,6 @@ export function UserDashboard() {
   );
 }
 
-/* ══════════════════════════════════════════
-   CARI PELATIH
-══════════════════════════════════════════ */
 export function UserCariPelatih() {
   const { api } = useAuth();
   const [allCoaches, setAllCoaches] = useState([]);
@@ -552,7 +716,6 @@ export function UserCariPelatih() {
             list.filter((p) => p.status_verifikasi === "terverifikasi"),
           ),
         );
-
         const rawCabor = caborRes?.data?.data || caborRes?.data || [];
         setCaborList(Array.isArray(rawCabor) ? rawCabor : []);
       })
@@ -566,7 +729,8 @@ export function UserCariPelatih() {
       list = list.filter(
         (p) =>
           p.nama?.toLowerCase().includes(search.toLowerCase()) ||
-          p.cabor?.toLowerCase().includes(search.toLowerCase()),
+          p.cabor?.toLowerCase().includes(search.toLowerCase()) ||
+          p.domisili?.toLowerCase().includes(search.toLowerCase()),
       );
     if (cabor !== "Semua") list = list.filter((p) => p.cabor === cabor);
     list = list.filter((p) => p.biaya <= maxBiaya);
@@ -788,7 +952,9 @@ export function UserCariPelatih() {
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="text-[14px] font-bold text-[#0a0a0a]">
-                    {formatRp(c.biaya)}
+                    {c.harga_min && c.harga_max
+                      ? `${formatRp(c.harga_min)} – ${formatRp(c.harga_max)}`
+                      : formatRp(c.biaya)}
                   </p>
                   <div className="flex items-center gap-1 justify-end mt-0.5">
                     <HiStar className="w-3 h-3 text-amber-400" />
@@ -812,15 +978,11 @@ export function UserCariPelatih() {
   );
 }
 
-/* ══════════════════════════════════════════
-   DETAIL PELATIH  ← BAGIAN YANG DIFIX
-══════════════════════════════════════════ */
 export function UserDetailPelatih() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { api } = useAuth();
   const [coach, setCoach] = useState(null);
-  const [jadwal, setJadwal] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fav, setFav] = useState(false);
 
@@ -836,35 +998,50 @@ export function UserDetailPelatih() {
         const withScores = hitungSkorAHP(
           allList.filter((p) => p.status_verifikasi === "terverifikasi"),
         );
-
-        // ✅ FIX: fromList hanya dipakai untuk skor AHP & ranking
-        // raw (detail endpoint) selalu jadi sumber utama field seperti deskripsi, prestasi_label, dll
         const fromList = withScores.find((p) => p.id === parseInt(id));
+
         const enriched = fromList
           ? {
-              ...fromList, // skor AHP, ranking, color dari kalkulasi list
-              ...raw, // ← data detail override (deskripsi, prestasi_label, dst)
-              id: fromList.id, // id sudah benar dari list (mapped dari pelatih_id)
-              cabor: fromList.cabor, // cabor sudah di-map dari cabang.nama_cabor
-              color: fromList.color, // warna dari CABOR_COLORS
-              initials: fromList.initials,
+              id: fromList.id,
+              pelatih_id: fromList.id,
+              nama: raw?.nama || fromList.nama,
+              cabor: raw?.cabang?.nama_cabor || fromList.cabor,
+              color: CABOR_COLORS[raw?.cabang?.nama_cabor] || fromList.color,
+              initials:
+                raw?.nama?.slice(0, 2).toUpperCase() || fromList.initials,
               skorAHP: fromList.skorAHP,
               ranking: fromList.ranking,
+              lokasi: raw?.domisili || raw?.lokasi || fromList.lokasi || "-",
+              deskripsi: raw?.deskripsi || null,
+              spesialis: raw?.spesialis || null,
+              domisili: raw?.domisili || null,
+              pengalaman_melatih: raw?.pengalaman_melatih || null,
+              harga_min: raw?.harga_min || null,
+              harga_max: raw?.harga_max || null,
+              status_verifikasi:
+                raw?.status_verifikasi || fromList.status_verifikasi,
+              pengalaman: raw?.pengalaman ?? fromList.pengalaman,
+              lisensi: raw?.lisensi ?? fromList.lisensi,
+              prestasi: raw?.prestasi ?? fromList.prestasi,
+              biaya: raw?.biaya ?? fromList.biaya,
+              rating: raw?.rating ?? fromList.rating ?? 0,
+              totalBooking: raw?.totalBooking ?? fromList.totalBooking ?? 0,
             }
           : {
               ...raw,
               id: raw?.pelatih_id,
+              pelatih_id: raw?.pelatih_id,
               cabor: raw?.cabang?.nama_cabor || "-",
               initials: raw?.nama?.slice(0, 2).toUpperCase(),
               skorAHP: 0,
               ranking: "-",
+              lokasi: raw?.domisili || raw?.lokasi || "-",
               color:
                 CABOR_COLORS[raw?.cabang?.nama_cabor] ||
                 "from-blue-400 to-indigo-500",
             };
 
         setCoach(enriched);
-        setJadwal(raw?.jadwal || []);
       })
       .catch(() => toast.error("Gagal memuat detail pelatih"))
       .finally(() => setLoading(false));
@@ -894,7 +1071,6 @@ export function UserDetailPelatih() {
     <UserLayout>
       <div className="flex h-full" style={sf}>
         <div className="flex-1 overflow-y-auto">
-          {/* Hero */}
           <div
             className={clsx(
               "relative h-56 bg-gradient-to-br flex items-end",
@@ -941,7 +1117,6 @@ export function UserDetailPelatih() {
             </div>
           </div>
 
-          {/* Body */}
           <div className="p-6">
             <div className="grid grid-cols-4 gap-3 mb-6">
               {[
@@ -983,29 +1158,58 @@ export function UserDetailPelatih() {
                 <h3 className="text-[15px] font-semibold text-[#0a0a0a] mb-3 tracking-[-0.2px]">
                   Tentang Pelatih
                 </h3>
-                {/* ✅ deskripsi sekarang muncul karena raw di-spread setelah fromList */}
-                <p className="text-[13px] text-[#6e6e73] leading-relaxed">
-                  {coach.deskripsi || "Informasi belum tersedia."}
-                </p>
-
-                {coach.lokasi && coach.lokasi !== "-" && (
+                {coach.deskripsi ? (
+                  <p className="text-[13px] text-[#6e6e73] leading-relaxed">
+                    {coach.deskripsi}
+                  </p>
+                ) : (
+                  <p className="text-[13px] text-[#aeaeb2] italic">
+                    Belum ada deskripsi.
+                  </p>
+                )}
+                {coach.domisili && (
                   <div className="flex items-center gap-2 mt-3 text-[13px] text-[#6e6e73]">
                     <HiMapPin className="w-4 h-4 text-[#aeaeb2] flex-shrink-0" />
-                    <span>{coach.lokasi}</span>
+                    <span>{coach.domisili}</span>
                   </div>
                 )}
-
-                {coach.prestasi_label && (
-                  <div className="mt-4 p-4 bg-[#f5f5f7] rounded-xl">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-[#aeaeb2] mb-1.5">
-                      Prestasi
+                {coach.spesialis && (
+                  <div className="mt-3 p-3 bg-blue-50 rounded-xl">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-blue-400 mb-1">
+                      Spesialis
                     </p>
-                    <p className="text-[13px] text-[#0a0a0a] leading-relaxed">
-                      {coach.prestasi_label}
+                    <p className="text-[13px] text-blue-700">
+                      {coach.spesialis}
                     </p>
                   </div>
                 )}
-
+                {coach.pengalaman_melatih && (
+                  <div className="mt-3 p-4 bg-[#f5f5f7] rounded-xl">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-[#aeaeb2] mb-2">
+                      Pengalaman Melatih
+                    </p>
+                    <div className="space-y-1">
+                      {coach.pengalaman_melatih
+                        .split("\n")
+                        .filter(Boolean)
+                        .map((item, i) => (
+                          <p key={i} className="text-[13px] text-[#0a0a0a]">
+                            • {item}
+                          </p>
+                        ))}
+                    </div>
+                  </div>
+                )}
+                {coach.harga_min && coach.harga_max ? (
+                  <div className="mt-3 p-3 bg-emerald-50 rounded-xl">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-500 mb-1">
+                      Range Harga per Pertemuan
+                    </p>
+                    <p className="text-[14px] font-bold text-emerald-700">
+                      {formatRp(coach.harga_min)} – {formatRp(coach.harga_max)}
+                    </p>
+                  </div>
+                ) : null}
                 <div className="mt-4 p-4 bg-[#f5f5f7] rounded-xl">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-[#aeaeb2] mb-2">
                     Kriteria AHP
@@ -1026,18 +1230,19 @@ export function UserDetailPelatih() {
                     ))}
                   </div>
                 </div>
-
                 <div className="flex flex-wrap gap-2 mt-3">
-                  <span className="badge-blue">
-                    {coach.lisensi_label || `Lisensi L${coach.lisensi}`}
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-600">
+                    Lisensi L{coach.lisensi}
                   </span>
-                  <span className="badge-green">{coach.cabor}</span>
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-600">
+                    {coach.cabor}
+                  </span>
                   <span
                     className={clsx(
-                      "badge",
+                      "px-2.5 py-1 rounded-full text-[11px] font-semibold",
                       coach.status_verifikasi === "terverifikasi"
-                        ? "badge-green"
-                        : "badge-red",
+                        ? "bg-emerald-50 text-emerald-600"
+                        : "bg-red-50 text-red-500",
                     )}
                   >
                     {coach.status_verifikasi}
@@ -1049,40 +1254,27 @@ export function UserDetailPelatih() {
                 <h3 className="text-[15px] font-semibold text-[#0a0a0a] mb-3 tracking-[-0.2px]">
                   Jadwal Tersedia
                 </h3>
-                {jadwal.length === 0 ? (
-                  <p className="text-[13px] text-[#aeaeb2]">
-                    Belum ada jadwal tersedia
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {jadwal.map((j, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center gap-3 p-3.5 bg-white rounded-xl border border-[#f0f0f0] hover:border-[#d0d0d0] cursor-pointer transition-colors group"
-                      >
-                        <div className="w-8 h-8 rounded-lg bg-[#f5f5f7] flex items-center justify-center text-[#0a0a0a]">
-                          <HiCalendarDays className="w-4 h-4" />
-                        </div>
-                        <span className="flex-1 text-[13px] font-medium text-[#0a0a0a]">
-                          {typeof j === "string" ? j : `${j.hari} ${j.jam}`}
-                        </span>
-                        <HiChevronRight className="w-4 h-4 text-[#aeaeb2] group-hover:text-[#0a0a0a] transition-colors" />
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <JadwalTersediaSection
+                  pelatihId={coach.id || coach.pelatih_id}
+                  api={api}
+                />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Booking panel */}
         <div className="hidden lg:flex w-72 flex-col bg-white border-l border-[#f0f0f0] flex-shrink-0">
           <div className="p-5 flex-1 overflow-y-auto">
             <div className="pb-5 border-b border-[#f0f0f0] mb-5">
-              <p className="text-[11px] text-[#aeaeb2] mb-1">Biaya per Sesi</p>
-              <p className="text-[28px] font-bold text-[#0a0a0a] tracking-[-0.5px]">
-                {formatRp(coach.biaya)}
+              <p className="text-[11px] text-[#aeaeb2] mb-1">
+                {coach.harga_min && coach.harga_max
+                  ? "Range Harga per Pertemuan"
+                  : "Biaya per Sesi"}
+              </p>
+              <p className="text-[22px] font-bold text-[#0a0a0a] tracking-[-0.5px]">
+                {coach.harga_min && coach.harga_max
+                  ? `${formatRp(coach.harga_min)} – ${formatRp(coach.harga_max)}`
+                  : formatRp(coach.biaya)}
               </p>
               <div className="flex items-center gap-1 mt-1">
                 <HiStar className="w-3.5 h-3.5 text-amber-400" />
@@ -1094,9 +1286,15 @@ export function UserDetailPelatih() {
                 </span>
               </div>
             </div>
-            <p className="text-[12px] text-[#aeaeb2] text-center py-4">
-              Pilih jadwal saat konfirmasi booking
-            </p>
+            <div className="mb-5">
+              <p className="text-[11px] font-semibold text-[#aeaeb2] uppercase tracking-wider mb-3">
+                Pilih Jadwal
+              </p>
+              <JadwalBookingPanel
+                pelatihId={coach.id || coach.pelatih_id}
+                api={api}
+              />
+            </div>
           </div>
           <div className="p-4 border-t border-[#f0f0f0]">
             <Link
@@ -1112,9 +1310,6 @@ export function UserDetailPelatih() {
   );
 }
 
-/* ══════════════════════════════════════════
-   BOOKING
-══════════════════════════════════════════ */
 export function UserBooking() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -1139,30 +1334,39 @@ export function UserBooking() {
           allList.filter((p) => p.status_verifikasi === "terverifikasi"),
         );
         const fromList = withScores.find((p) => p.id === parseInt(id));
+
         const enriched = fromList
           ? {
-              ...fromList,
-              ...raw,
               id: fromList.id,
-              cabor: fromList.cabor,
+              pelatih_id: fromList.id,
+              nama: raw?.nama || fromList.nama,
+              cabor: raw?.cabang?.nama_cabor || fromList.cabor,
               color: fromList.color,
               initials: fromList.initials,
               skorAHP: fromList.skorAHP,
               ranking: fromList.ranking,
+              lokasi: raw?.domisili || raw?.lokasi || fromList.lokasi || "-",
+              harga_min: raw?.harga_min || null,
+              harga_max: raw?.harga_max || null,
+              biaya: raw?.biaya ?? fromList.biaya,
+              rating: raw?.rating ?? fromList.rating ?? 0,
+              totalBooking: raw?.totalBooking ?? fromList.totalBooking ?? 0,
             }
           : {
               ...raw,
               id: raw?.pelatih_id,
+              pelatih_id: raw?.pelatih_id,
               cabor: raw?.cabang?.nama_cabor || "-",
               initials: raw?.nama?.slice(0, 2).toUpperCase(),
               skorAHP: 0,
+              lokasi: raw?.domisili || raw?.lokasi || "-",
               color:
                 CABOR_COLORS[raw?.cabang?.nama_cabor] ||
                 "from-blue-400 to-indigo-500",
             };
+
         setCoach(enriched);
         if (raw?.cabor_id) setForm((p) => ({ ...p, cabor_id: raw.cabor_id }));
-
         const rawCabor = caborRes?.data?.data || caborRes?.data || [];
         setCaborList(Array.isArray(rawCabor) ? rawCabor : []);
       })
@@ -1217,7 +1421,6 @@ export function UserBooking() {
         >
           <HiArrowLeft className="w-4 h-4" /> Kembali
         </button>
-
         <div
           className={clsx(
             "rounded-2xl p-5 bg-gradient-to-br mb-4 flex items-center gap-4",
@@ -1236,11 +1439,12 @@ export function UserBooking() {
           <div className="text-right flex-shrink-0">
             <p className="text-white/70 text-[11px]">Per Sesi</p>
             <p className="text-[20px] font-bold text-white tracking-[-0.3px]">
-              {formatRp(coach.biaya)}
+              {coach.harga_min && coach.harga_max
+                ? `${formatRp(coach.harga_min)} – ${formatRp(coach.harga_max)}`
+                : formatRp(coach.biaya)}
             </p>
           </div>
         </div>
-
         <div className="bg-white rounded-2xl p-5 border border-[#f0f0f0]">
           <h3 className="text-[15px] font-semibold text-[#0a0a0a] mb-5 tracking-[-0.2px]">
             Detail Booking
@@ -1294,15 +1498,18 @@ export function UserBooking() {
               />
             </div>
             <div className="bg-[#f5f5f7] rounded-xl p-4 space-y-2">
-              {[
-                ["Biaya sesi", formatRp(coach.biaya)],
-                ["Durasi", "1 sesi"],
-              ].map(([k, v]) => (
-                <div key={k} className="flex justify-between text-[13px]">
-                  <span className="text-[#aeaeb2]">{k}</span>
-                  <span className="font-semibold text-[#0a0a0a]">{v}</span>
-                </div>
-              ))}
+              <div className="flex justify-between text-[13px]">
+                <span className="text-[#aeaeb2]">Biaya sesi</span>
+                <span className="font-semibold text-[#0a0a0a]">
+                  {coach.harga_min && coach.harga_max
+                    ? `${formatRp(coach.harga_min)} – ${formatRp(coach.harga_max)}`
+                    : formatRp(coach.biaya)}
+                </span>
+              </div>
+              <div className="flex justify-between text-[13px]">
+                <span className="text-[#aeaeb2]">Durasi</span>
+                <span className="font-semibold text-[#0a0a0a]">1 sesi</span>
+              </div>
               <p className="text-[11px] text-[#aeaeb2] pt-1 border-t border-[#e5e5ea]">
                 Pembayaran langsung ke pelatih setelah sesi selesai.
               </p>
@@ -1321,9 +1528,6 @@ export function UserBooking() {
   );
 }
 
-/* ══════════════════════════════════════════
-   RIWAYAT
-══════════════════════════════════════════ */
 export function UserRiwayat() {
   const { api } = useAuth();
   const [bookings, setBookings] = useState([]);
@@ -1422,11 +1626,7 @@ export function UserRiwayat() {
                       </span>
                     </div>
                   </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="mt-1">
-                      <StatusPill status={b.status} />
-                    </div>
-                  </div>
+                  <StatusPill status={b.status} />
                 </motion.div>
               );
             })}
@@ -1447,9 +1647,6 @@ export function UserRiwayat() {
   );
 }
 
-/* ══════════════════════════════════════════
-   FAVORIT
-══════════════════════════════════════════ */
 export function UserFavorit() {
   const { api } = useAuth();
   const [allCoaches, setAllCoaches] = useState([]);
