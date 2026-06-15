@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { HiMagnifyingGlass } from "react-icons/hi2";
+import { HiMagnifyingGlass, HiCheck, HiXMark } from "react-icons/hi2";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { StatusBadge } from "../../components/ui/Badges";
 import Pagination from "../../components/ui/Pagination";
@@ -14,6 +14,7 @@ export default function AdminPemesanan() {
   const [bookingList, setBookingList] = useState([]);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(null); // id yang sedang diupdate
   const [summaryStats, setSummaryStats] = useState({
     total: 0,
     confirmed: 0,
@@ -38,7 +39,6 @@ export default function AdminPemesanan() {
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      // FIX: pakai /api/admin/bookings (bukan /api/booking yang tidak ada)
       const res = await api.get(
         `/api/admin/bookings?search=${search}&page=${page}&limit=${perPage}`,
       );
@@ -53,34 +53,44 @@ export default function AdminPemesanan() {
       setPagination(pag);
       setSummaryStats({
         total: pag.total || list.length,
-        confirmed: list.filter(
-          (b) => b.status === "confirmed" || b.status === "dikonfirmasi",
-        ).length,
-        pending: list.filter(
-          (b) => b.status === "pending" || b.status === "menunggu",
-        ).length,
-        completed: list.filter(
-          (b) => b.status === "completed" || b.status === "selesai",
-        ).length,
+        confirmed: list.filter((b) => b.status === "konfirmasi").length,
+        pending: list.filter((b) => b.status === "pending").length,
+        completed: list.filter((b) => b.status === "selesai").length,
       });
     } catch (err) {
-      console.error("❌ Error fetching bookings:", err);
-      toast.error(
-        err.response?.data?.message ||
-          err.response?.data?.error ||
-          "Gagal memuat data booking",
-      );
+      toast.error(err.response?.data?.message || "Gagal memuat data booking");
     } finally {
       setLoading(false);
     }
   };
 
-  const formatRp = (n) =>
-    new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(n);
+  const updateStatus = async (bookingId, status) => {
+    setUpdating(bookingId);
+    try {
+      await api.patch(`/api/admin/bookings/${bookingId}/status`, { status });
+      toast.success(
+        status === "konfirmasi"
+          ? "Booking dikonfirmasi!"
+          : "Booking dibatalkan!",
+      );
+      // Update lokal tanpa refetch
+      setBookingList((prev) =>
+        prev.map((b) =>
+          (b.booking_id || b.id) === bookingId ? { ...b, status } : b,
+        ),
+      );
+      setSummaryStats((prev) => ({
+        ...prev,
+        confirmed:
+          status === "konfirmasi" ? prev.confirmed + 1 : prev.confirmed,
+        pending: prev.pending - 1,
+      }));
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Gagal update status");
+    } finally {
+      setUpdating(null);
+    }
+  };
 
   const statCards = [
     { label: "Total", val: summaryStats.total, col: "text-primary-600" },
@@ -98,6 +108,7 @@ export default function AdminPemesanan() {
       title="Manajemen Pemesanan"
       subtitle="Monitor seluruh booking pelatih"
     >
+      {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         {statCards.map((s, i) => (
           <motion.div
@@ -121,6 +132,7 @@ export default function AdminPemesanan() {
         transition={{ delay: 0.3 }}
         className="card overflow-hidden"
       >
+        {/* Search */}
         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700">
           <div className="relative max-w-xs">
             <HiMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -151,46 +163,85 @@ export default function AdminPemesanan() {
               <table className="w-full">
                 <thead className="bg-slate-50 dark:bg-slate-700/50">
                   <tr>
-                    {["#", "User", "Pelatih", "Cabor", "Tanggal", "Status"].map(
-                      (h) => (
-                        <th key={h} className="table-header whitespace-nowrap">
-                          {h}
-                        </th>
-                      ),
-                    )}
+                    {[
+                      "#",
+                      "User",
+                      "Pelatih",
+                      "Cabor",
+                      "Tanggal",
+                      "Status",
+                      "Aksi",
+                    ].map((h) => (
+                      <th key={h} className="table-header whitespace-nowrap">
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                  {bookingList.map((b, i) => (
-                    <motion.tr
-                      key={b.booking_id || b.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: i * 0.05 }}
-                      className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors"
-                    >
-                      <td className="table-cell text-slate-400 text-xs">
-                        #{b.booking_id || b.id}
-                      </td>
-                      <td className="table-cell font-medium text-sm">
-                        {b.userName || b.user?.nama || "-"}
-                      </td>
-                      <td className="table-cell text-sm text-slate-500 dark:text-slate-400">
-                        {b.pelatihNama || b.pelatih?.nama || "-"}
-                      </td>
-                      <td className="table-cell text-sm">
-                        {b.cabor || b.pelatih?.cabang?.nama_cabor || "-"}
-                      </td>
-                      <td className="table-cell text-xs text-slate-500">
-                        {b.tanggal
-                          ? new Date(b.tanggal).toLocaleDateString("id-ID")
-                          : "-"}
-                      </td>
-                      <td className="table-cell">
-                        <StatusBadge status={b.status} />
-                      </td>
-                    </motion.tr>
-                  ))}
+                  {bookingList.map((b, i) => {
+                    const bId = b.booking_id || b.id;
+                    const isPending = b.status === "pending";
+                    const isUpdating = updating === bId;
+                    return (
+                      <motion.tr
+                        key={bId}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: i * 0.05 }}
+                        className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors"
+                      >
+                        <td className="table-cell text-slate-400 text-xs">
+                          #{bId}
+                        </td>
+                        <td className="table-cell font-medium text-sm">
+                          {b.userName || b.user?.nama || "-"}
+                        </td>
+                        <td className="table-cell text-sm text-slate-500 dark:text-slate-400">
+                          {b.pelatihNama || b.pelatih?.nama || "-"}
+                        </td>
+                        <td className="table-cell text-sm">
+                          {b.cabor || b.pelatih?.cabang?.nama_cabor || "-"}
+                        </td>
+                        <td className="table-cell text-xs text-slate-500">
+                          {b.tanggal
+                            ? new Date(b.tanggal).toLocaleDateString("id-ID")
+                            : "-"}
+                        </td>
+                        <td className="table-cell">
+                          <StatusBadge status={b.status} />
+                        </td>
+                        <td className="table-cell">
+                          {isPending ? (
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => updateStatus(bId, "konfirmasi")}
+                                disabled={isUpdating}
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 text-xs font-semibold transition-colors disabled:opacity-50"
+                              >
+                                {isUpdating ? (
+                                  <div className="w-3 h-3 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <HiCheck className="w-3.5 h-3.5" />
+                                )}
+                                Konfirmasi
+                              </button>
+                              <button
+                                onClick={() => updateStatus(bId, "dibatalkan")}
+                                disabled={isUpdating}
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 text-xs font-semibold transition-colors disabled:opacity-50"
+                              >
+                                <HiXMark className="w-3.5 h-3.5" />
+                                Tolak
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-300">—</span>
+                          )}
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { HiPencil, HiCheck, HiPlus, HiTrash } from "react-icons/hi2";
+import { HiPencil, HiCheck, HiPlus, HiTrash, HiCamera } from "react-icons/hi2";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { StatusBadge } from "../../components/ui/Badges";
 import { useAuth } from "../../context/AuthContext";
@@ -53,6 +53,8 @@ export function PelatihProfil() {
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingFoto, setUploadingFoto] = useState(false);
+  const [fotoUrl, setFotoUrl] = useState(null);
   const [caborList, setCaborList] = useState([]);
   const [form, setForm] = useState({
     nama: "",
@@ -83,6 +85,7 @@ export function PelatihProfil() {
         const profil = profilRes.data.data || profilRes.data;
         if (profil) {
           setMyId(profil.pelatih_id);
+          setFotoUrl(profil.foto || null);
           setForm({
             nama: profil.nama || "",
             cabor_id: String(profil.cabor_id || ""),
@@ -138,6 +141,29 @@ export function PelatihProfil() {
     }
   };
 
+  const handleUploadFoto = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Ukuran foto maksimal 2MB");
+      return;
+    }
+    setUploadingFoto(true);
+    try {
+      const formData = new FormData();
+      formData.append("foto", file);
+      const res = await api.post("/api/pelatih/my-foto", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setFotoUrl(res.data.data.foto);
+      toast.success("Foto berhasil diupload!");
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Gagal upload foto");
+    } finally {
+      setUploadingFoto(false);
+    }
+  };
+
   const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
 
   if (loading)
@@ -165,11 +191,43 @@ export function PelatihProfil() {
         <div className="card p-6">
           {/* Header */}
           <div className="flex items-center gap-4 mb-6">
-            <Avatar
-              initials={form.nama?.slice(0, 2).toUpperCase() || "P"}
-              size="xl"
-              id={myId || 1}
-            />
+            {/* Avatar + upload foto */}
+            <div className="relative flex-shrink-0 w-16 h-16">
+              <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-100">
+                {fotoUrl ? (
+                  <img
+                    src={`http://localhost:3000${fotoUrl}`}
+                    alt={form.nama}
+                    className="w-full h-full object-cover block"
+                  />
+                ) : (
+                  <Avatar
+                    initials={form.nama?.slice(0, 2).toUpperCase() || "P"}
+                    size="xl"
+                    id={myId || 1}
+                  />
+                )}
+              </div>
+              <label
+                className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center cursor-pointer hover:bg-primary-700 transition-colors ${
+                  uploadingFoto ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                {uploadingFoto ? (
+                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <HiCamera className="w-3 h-3 text-white" />
+                )}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleUploadFoto}
+                  disabled={uploadingFoto}
+                />
+              </label>
+            </div>
+
             <div>
               <h3 className="font-display font-black text-2xl text-slate-900 dark:text-white">
                 {form.nama}
@@ -772,7 +830,6 @@ export function PelatihStatus() {
             </p>
           </div>
 
-          {/* Info tambahan */}
           <div className="mt-6 grid grid-cols-2 gap-3">
             <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl text-center">
               <p className="text-xs text-slate-400 mb-1">Total Booking</p>

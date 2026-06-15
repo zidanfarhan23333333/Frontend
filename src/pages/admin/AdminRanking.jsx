@@ -6,6 +6,11 @@ import { RankingBarChart, AHPBobot } from "../../components/charts/Charts";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 
+// ✅ Halaman ini sudah benar sejak awal: ambil data dari /api/admin/ranking
+//    (backend yang menghitung skor AHP), tidak ada kalkulasi di frontend.
+//    AdminDashboard.jsx dan Charts.jsx (RankingBarChart) kini menggunakan
+//    endpoint yang sama sehingga skor selalu konsisten di seluruh halaman.
+
 export default function AdminRanking() {
   const { api } = useAuth();
   const [pelatihList, setPelatihList] = useState([]);
@@ -19,7 +24,6 @@ export default function AdminRanking() {
   const fetchRanking = async () => {
     setLoading(true);
     try {
-      // FIX: fetch dari backend, tidak lagi pakai dummy data
       const res = await api.get("/api/admin/ranking");
       const raw = res.data.data || res.data;
       setPelatihList(raw.pelatih || (Array.isArray(raw) ? raw : []));

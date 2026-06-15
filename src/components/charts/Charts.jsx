@@ -39,10 +39,10 @@ const DUMMY_CABOR = [
 ];
 
 const AHP_BOBOT_STATIC = [
-  { kriteria: "Pengalaman", bobot: 0.35, fill: "#1D4ED8" },
-  { kriteria: "Lisensi", bobot: 0.25, fill: "#4338CA" },
-  { kriteria: "Prestasi", bobot: 0.25, fill: "#06B6D4" },
-  { kriteria: "Biaya", bobot: 0.15, fill: "#10B981" },
+  { kriteria: "Pengalaman", bobot: 0.5449, fill: "#1D4ED8" },
+  { kriteria: "Lisensi", bobot: 0.2798, fill: "#4338CA" },
+  { kriteria: "Prestasi", bobot: 0.1193, fill: "#06B6D4" },
+  { kriteria: "Biaya", bobot: 0.056, fill: "#10B981" },
 ];
 
 const PIE_COLORS = [
@@ -76,37 +76,11 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
-// ─── Hook: fetch dengan fallback ──────────────────────────────────────────────
-function useChartData(fetcher, fallback) {
-  const [data, setData] = useState(fallback);
-  const { api } = useAuth();
-
-  useEffect(() => {
-    fetcher(api)
-      .then((res) => {
-        const d = res?.data?.data || res?.data;
-        if (
-          d &&
-          (Array.isArray(d) ? d.length > 0 : Object.keys(d).length > 0)
-        ) {
-          setData(d);
-        }
-      })
-      .catch(() => {
-        /* gunakan fallback */
-      });
-  }, []);
-
-  return data;
-}
-
 // ─── BookingLineChart ─────────────────────────────────────────────────────────
 export function BookingLineChart() {
   const { dark } = useTheme();
   const gridColor = dark ? "#334155" : "#E2E8F0";
   const textColor = dark ? "#94A3B8" : "#64748B";
-
-  // Fetch booking per bulan dari admin stats atau endpoint khusus
   const { api } = useAuth();
   const [data, setData] = useState(DUMMY_MONTHLY);
 
@@ -115,7 +89,6 @@ export function BookingLineChart() {
       .get("/api/admin/stats")
       .then((res) => {
         const raw = res?.data?.data || res?.data;
-        // Jika backend mengembalikan monthlyBooking array
         if (
           Array.isArray(raw?.monthlyBooking) &&
           raw.monthlyBooking.length > 0
@@ -126,9 +99,7 @@ export function BookingLineChart() {
               booking: item.booking || item.count || item.total,
             })),
           );
-        }
-        // Jika backend mengembalikan bookingPerBulan
-        else if (
+        } else if (
           Array.isArray(raw?.bookingPerBulan) &&
           raw.bookingPerBulan.length > 0
         ) {
@@ -139,11 +110,8 @@ export function BookingLineChart() {
             })),
           );
         }
-        // Tetap pakai dummy jika struktur tidak cocok
       })
-      .catch(() => {
-        /* tetap dummy */
-      });
+      .catch(() => {});
   }, []);
 
   return (
@@ -184,14 +152,11 @@ export function CaborPieChart() {
   const [data, setData] = useState(DUMMY_CABOR);
 
   useEffect(() => {
-    // Fetch semua pemesanan → hitung per cabor, ATAU pakai endpoint stats
     Promise.all([
       api.get("/api/admin/stats").catch(() => null),
       api.get("/api/cabor").catch(() => null),
     ]).then(([statsRes, caborRes]) => {
       const stats = statsRes?.data?.data || statsRes?.data;
-
-      // Jika backend punya caborStats / bookingPerCabor
       if (Array.isArray(stats?.caborStats) && stats.caborStats.length > 0) {
         setData(
           stats.caborStats.map((c, i) => ({
@@ -215,8 +180,6 @@ export function CaborPieChart() {
         );
         return;
       }
-
-      // Fallback: hitung dari list cabor (tampilkan jumlah pelatih per cabor)
       const caborRaw = caborRes?.data?.data || caborRes?.data;
       if (Array.isArray(caborRaw) && caborRaw.length > 0) {
         const mapped = caborRaw
@@ -263,12 +226,8 @@ export function CaborPieChart() {
 }
 
 // ─── AHPBobot ─────────────────────────────────────────────────────────────────
-// Bobot AHP adalah konfigurasi sistem (statis), tidak perlu fetch dari API.
-// Tapi jika backend punya endpoint bobot dinamis, fetch dari sana.
-export function AHPBobot() {
+export function AHPBobot({ onBobotLoaded } = {}) {
   const { dark } = useTheme();
-  const gridColor = dark ? "#334155" : "#E2E8F0";
-  const textColor = dark ? "#94A3B8" : "#64748B";
   const { api } = useAuth();
   const [data, setData] = useState(AHP_BOBOT_STATIC);
 
@@ -278,53 +237,83 @@ export function AHPBobot() {
       .catch(() => null)
       .then((res) => {
         const raw = res?.data?.data || res?.data;
-        if (Array.isArray(raw) && raw.length > 0) {
-          setData(
-            raw.map((item, i) => ({
-              kriteria: item.nama_kriteria || item.kriteria || item.nama,
-              bobot: parseFloat(item.bobot),
-              fill:
-                AHP_BOBOT_STATIC[i]?.fill || PIE_COLORS[i % PIE_COLORS.length],
-            })),
+
+        const list = Array.isArray(raw?.kriteria)
+          ? raw.kriteria
+          : Array.isArray(raw)
+            ? raw
+            : [];
+
+        if (list.length > 0) {
+          const mapped = list.map((item, i) => ({
+            kriteria: item.nama || item.kriteria || item.nama_kriteria,
+            bobot: parseFloat(item.bobot),
+            fill:
+              AHP_BOBOT_STATIC[i]?.fill || PIE_COLORS[i % PIE_COLORS.length],
+          }));
+
+          setData(mapped);
+
+          onBobotLoaded?.(
+            mapped.reduce((acc, d) => {
+              acc[d.kriteria.toLowerCase()] = d.bobot;
+              return acc;
+            }, {}),
           );
         }
       });
   }, []);
 
+  const textColor = dark ? "#94A3B8" : "#475569";
+  const trackColor = dark ? "#1E293B" : "#F1F5F9";
+  const maxBobot = Math.max(...data.map((d) => d.bobot));
+
   return (
-    <ResponsiveContainer width="100%" height={260}>
-      <BarChart
-        data={data}
-        margin={{ top: 5, right: 10, left: -10, bottom: 0 }}
-      >
-        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-        <XAxis
-          dataKey="kriteria"
-          tick={{ fill: textColor, fontSize: 12 }}
-          axisLine={false}
-          tickLine={false}
-        />
-        <YAxis
-          tick={{ fill: textColor, fontSize: 11 }}
-          axisLine={false}
-          tickLine={false}
-          domain={[0, 0.5]}
-        />
-        <Tooltip
-          content={<CustomTooltip />}
-          formatter={(v) => [(v * 100).toFixed(0) + "%"]}
-        />
-        <Bar dataKey="bobot" name="Bobot" radius={[6, 6, 0, 0]}>
-          {data.map((entry, i) => (
-            <Cell key={i} fill={entry.fill} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
+    <div className="flex flex-col gap-4 w-full py-2">
+      {data.map((item, i) => {
+        const widthPct = ((item.bobot / maxBobot) * 100).toFixed(1);
+        const pctLabel = (item.bobot * 100).toFixed(1) + "%";
+        return (
+          <div key={i} className="flex items-center gap-3">
+            <span
+              className="text-xs font-semibold shrink-0 text-right"
+              style={{ color: textColor, width: "76px" }}
+            >
+              {item.kriteria}
+            </span>
+            <div
+              className="flex-1 rounded-full overflow-hidden"
+              style={{ backgroundColor: trackColor, height: "32px" }}
+            >
+              <div
+                className="h-full rounded-full flex items-center px-3 transition-all duration-700"
+                style={{
+                  width: `${widthPct}%`,
+                  background: `linear-gradient(90deg, ${item.fill}cc, ${item.fill})`,
+                  minWidth: "64px",
+                }}
+              >
+                <span className="text-white text-xs font-bold drop-shadow-sm">
+                  {pctLabel}
+                </span>
+              </div>
+            </div>
+            <span
+              className="text-xs font-mono shrink-0"
+              style={{ color: textColor, width: "48px" }}
+            >
+              {item.bobot.toFixed(4)}
+            </span>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
 // ─── RankingBarChart ──────────────────────────────────────────────────────────
+// ✅ FIX: Gunakan /api/admin/ranking sebagai satu-satunya sumber kebenaran,
+//         sama dengan AdminRanking.jsx dan AdminDashboard.jsx
 export function RankingBarChart() {
   const { dark } = useTheme();
   const gridColor = dark ? "#334155" : "#E2E8F0";
@@ -334,63 +323,25 @@ export function RankingBarChart() {
 
   useEffect(() => {
     api
-      .get("/api/rekomendasi")
-      .catch(() => null)
-      .then(async (res) => {
+      .get("/api/admin/ranking")
+      .then((res) => {
         const raw = res?.data?.data || res?.data;
-
-        // Coba endpoint rekomendasi dulu
-        if (Array.isArray(raw) && raw.length > 0) {
+        // Backend /api/admin/ranking mengembalikan { pelatih: [...], bobot: {...} }
+        const list = raw?.pelatih || (Array.isArray(raw) ? raw : []);
+        if (list.length > 0) {
           setData(
-            raw.slice(0, 8).map((p) => ({
-              nama: shortenName(p.nama || p.pelatih?.nama || ""),
-              skor: parseFloat(p.skor_akhir || p.skorAHP || p.skor || 0),
-              cabor: p.cabang?.nama_cabor || p.cabor || "",
+            list.slice(0, 8).map((p) => ({
+              nama: shortenName(p.nama),
+              // Backend sudah menghitung skor — ambil langsung
+              skor: p.skorAHP ?? p.skor ?? 0,
+              cabor: p.cabor || p.cabang?.nama_cabor || "-",
             })),
           );
-          return;
+        } else {
+          setData([]);
         }
-
-        // Fallback: fetch semua pelatih → hitung skor AHP di frontend
-        const pelatihRes = await api.get("/api/pelatih").catch(() => null);
-        const pelatih = pelatihRes?.data?.data || pelatihRes?.data;
-        const list = Array.isArray(pelatih)
-          ? pelatih
-          : Array.isArray(pelatih?.pelatih)
-            ? pelatih.pelatih
-            : [];
-
-        if (list.length > 0) {
-          const maxVal = {
-            pengalaman: Math.max(...list.map((p) => p.pengalaman)) || 1,
-            lisensi: Math.max(...list.map((p) => p.lisensi)) || 1,
-            prestasi: Math.max(...list.map((p) => p.prestasi)) || 1,
-            biaya: Math.max(...list.map((p) => p.biaya)) || 1,
-          };
-          const scored = list
-            .filter((p) => p.status_verifikasi === "terverifikasi")
-            .map((p) => ({
-              nama: shortenName(p.nama),
-              skor: parseFloat(
-                (
-                  0.35 * (p.pengalaman / maxVal.pengalaman) +
-                  0.25 * (p.lisensi / maxVal.lisensi) +
-                  0.25 * (p.prestasi / maxVal.prestasi) +
-                  0.15 * (p.biaya / maxVal.biaya)
-                ).toFixed(4),
-              ),
-              cabor: p.cabang?.nama_cabor || "",
-            }))
-            .sort((a, b) => b.skor - a.skor)
-            .slice(0, 8);
-
-          if (scored.length > 0) {
-            setData(scored);
-            return;
-          }
-        }
-
-        // Jika benar-benar belum ada data pelatih terverifikasi
+      })
+      .catch(() => {
         setData([]);
       });
   }, []);
