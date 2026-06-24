@@ -18,7 +18,7 @@ import {
 } from "react-icons/hi2";
 import { useAuth } from "../../context/AuthContext";
 import ThemeToggle from "../ui/ThemeToggle";
-import Avatar from "../ui/Avatar";
+import Avatar from "../ui/Avatar";  
 import clsx from "clsx";
 import LOGOSF from "../assets/logosf.png";
 

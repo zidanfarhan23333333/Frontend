@@ -21,26 +21,10 @@ import { StatusBadge } from "../../components/ui/Badges";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 
-// ✅ Hanya satu fungsi hitungSkorAHP, pakai bobot dinamis dari API
-function hitungSkorAHP(pelatihList, bobot) {
-  if (!pelatihList.length || !bobot) return [];
-  const keys = Object.keys(bobot);
-  const max = {};
-  keys.forEach((k) => {
-    max[k] = Math.max(...pelatihList.map((p) => p[k] || 0)) || 1;
-  });
-  return pelatihList
-    .map((p) => ({
-      ...p,
-      skorAHP: parseFloat(
-        keys
-          .reduce((sum, k) => sum + bobot[k] * ((p[k] || 0) / max[k]), 0)
-          .toFixed(4),
-      ),
-    }))
-    .sort((a, b) => b.skorAHP - a.skorAHP)
-    .map((p, i) => ({ ...p, ranking: i + 1 }));
-}
+// ✅ FIX: Fungsi hitungSkorAHP dihapus sepenuhnya.
+//         Skor AHP kini dihitung eksklusif di backend (/api/admin/ranking),
+//         sehingga Dashboard, halaman Ranking, dan RankingBarChart
+//         selalu menampilkan angka yang identik.
 
 export default function AdminDashboard() {
   const { api } = useAuth();
@@ -58,57 +42,33 @@ export default function AdminDashboard() {
     setLoading(true);
     setError("");
     try {
-      const [statsRes, pelatihRes, bookingRes, bobotRes] = await Promise.all([
+      // ✅ FIX: Gunakan /api/admin/ranking (sama dengan AdminRanking.jsx)
+      //         sebagai satu-satunya sumber data pelatih + skor AHP.
+      //         Tidak lagi fetch /api/pelatih lalu hitung sendiri di frontend.
+      const [statsRes, rankingRes, bookingRes] = await Promise.all([
         api.get("/api/admin/stats"),
-        api.get("/api/pelatih"),
+        api.get("/api/admin/ranking"),
         api.get("/api/admin/bookings"),
-        api.get("/api/ahp/bobot").catch(() => null),
       ]);
 
       setStats(statsRes.data.data || statsRes.data);
 
-      // Parse bobot dari API
-      const bobotRaw = bobotRes?.data?.data || bobotRes?.data;
-      const bobotList = Array.isArray(bobotRaw?.kriteria)
-        ? bobotRaw.kriteria
-        : Array.isArray(bobotRaw)
-          ? bobotRaw
-          : [];
-
-      const bobot =
-        bobotList.length > 0
-          ? bobotList.reduce((acc, item) => {
-              const key = (
-                item.nama ||
-                item.kriteria ||
-                item.nama_kriteria ||
-                ""
-              ).toLowerCase();
-              acc[key] = parseFloat(item.bobot);
-              return acc;
-            }, {})
-          : {
-              pengalaman: 0.5449,
-              lisensi: 0.2798,
-              prestasi: 0.1193,
-              biaya: 0.056,
-            };
-
-      const pelatihRaw = pelatihRes.data.data || pelatihRes.data;
-      const rawList =
-        pelatihRaw.pelatih || (Array.isArray(pelatihRaw) ? pelatihRaw : []);
-      setPelatihList(hitungSkorAHP(rawList, bobot));
+      // Parse pelatih dari ranking endpoint (skor sudah dihitung backend)
+      const rankingRaw = rankingRes.data.data || rankingRes.data;
+      setPelatihList(
+        rankingRaw.pelatih || (Array.isArray(rankingRaw) ? rankingRaw : [])
+      );
 
       const bookingRaw = bookingRes.data.data || bookingRes.data;
       setBookingList(
-        bookingRaw.bookings || (Array.isArray(bookingRaw) ? bookingRaw : []),
+        bookingRaw.bookings || (Array.isArray(bookingRaw) ? bookingRaw : [])
       );
     } catch (err) {
       console.error("❌ Error fetching dashboard:", err);
       setError(err.response?.data?.message || "Gagal memuat data");
       toast.error("Gagal memuat dashboard");
     } finally {
-      setLoading(false); // ✅ jangan lupa ini
+      setLoading(false);
     }
   };
 

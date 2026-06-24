@@ -5,12 +5,11 @@ import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 
 const ROLES = [
-  { value: "admin", label: "Admin", color: "#4A3AFF", text: "#fff" },
-  { value: "user", label: "User", color: "#1a1a2e", text: "#fff" },
-  { value: "pelatih", label: "Pelatih", color: "#FFD700", text: "#1a1a2e" },
+  { value: "admin", label: "Admin" },
+  { value: "user", label: "User" },
+  { value: "pelatih", label: "Pelatih" },
 ];
 
-// Redirect tujuan berdasarkan role yang dikembalikan server
 const REDIRECT_MAP = {
   admin: "/admin/dashboard",
   pelatih: "/pelatih/dashboard",
@@ -20,328 +19,118 @@ const REDIRECT_MAP = {
 export default function Login() {
   const { login, loading } = useAuth();
   const navigate = useNavigate();
-
-  // selectedRole hanya untuk tampilan UX — tidak dikirim ke backend
   const [selectedRole, setSelectedRole] = useState("user");
   const [form, setForm] = useState({ email: "", password: "" });
   const [show, setShow] = useState(false);
   const [error, setError] = useState("");
 
-  const activeRole = ROLES.find((r) => r.value === selectedRole);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
-    // Validasi input kosong
     if (!form.email || !form.password) {
       setError("Email dan password wajib diisi");
       toast.error("Email dan password wajib diisi!");
       return;
     }
-
     try {
-      // Kirim hanya email & password — role dikembalikan dari server
       const userData = await login({
         email: form.email,
         password: form.password,
       });
-
-      // ✅ Toast sukses login
       toast.success(`Selamat datang, ${userData.nama}!`);
-
-      // Redirect berdasarkan role dari response server
-      const dest = REDIRECT_MAP[userData.role] ?? "/";
-      navigate(dest, { replace: true });
+      navigate(REDIRECT_MAP[userData.role] ?? "/", { replace: true });
     } catch (err) {
-      console.error("Login error:", err);
-
       const msg =
         err.response?.data?.message ||
         err.response?.data?.error ||
         "Email atau password salah";
-
-      // Set error state untuk 显示 di form
       setError(msg);
-
-      // ✅ Toast error (popup langsung)
       toast.error(msg);
     }
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-      }}
-      className="login-grid"
-    >
-      {/* LEFT PANEL */}
-      <div
-        style={{
-          background: "#1a1a2e",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          padding: 48,
-          position: "relative",
-          overflow: "hidden",
-        }}
-        className="login-left"
-      >
-        <div
-          style={{
-            position: "absolute",
-            top: 60,
-            right: 40,
-            width: 160,
-            height: 160,
-            border: "3px solid rgba(74,58,255,0.3)",
-            borderRadius: "50%",
-            pointerEvents: "none",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: 80,
-            right: 60,
-            width: 100,
-            height: 100,
-            border: "3px solid rgba(255,215,0,0.15)",
-            borderRadius: "50%",
-            pointerEvents: "none",
-          }}
-        />
-        <svg
-          style={{ position: "absolute", left: 20, bottom: 100, opacity: 0.08 }}
-          width="120"
-          height="180"
-          viewBox="0 0 80 120"
-        >
-          <path d="M50 0L20 55H45L15 120L70 45H42L50 0Z" fill="#4A3AFF" />
-        </svg>
-        <svg
-          style={{ position: "absolute", right: 20, top: 200, opacity: 0.06 }}
-          width="80"
-          height="120"
-          viewBox="0 0 80 120"
-        >
-          <path d="M50 0L20 55H45L15 120L70 45H42L50 0Z" fill="#FFD700" />
-        </svg>
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            position: "relative",
-          }}
-        >
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 10,
-              background: "#4A3AFF",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <span
-              style={{
-                color: "#fff",
-                fontFamily: "Oswald,sans-serif",
-                fontWeight: 700,
-                fontSize: 14,
-              }}
-            >
-              CF
-            </span>
-          </div>
-          <span
-            style={{
-              fontFamily: "Oswald,sans-serif",
-              fontWeight: 700,
-              fontSize: 20,
-              color: "#fff",
-              letterSpacing: "0.08em",
-            }}
-          >
-            COACHFINDER
-          </span>
-        </div>
-
-        <div style={{ position: "relative" }}>
-          <div
-            style={{
-              display: "inline-block",
-              background: "#4A3AFF",
-              color: "#fff",
-              fontSize: 11,
-              fontWeight: 700,
-              padding: "4px 12px",
-              borderRadius: 999,
-              textTransform: "uppercase",
-              letterSpacing: "0.1em",
-              marginBottom: 20,
-            }}
-          >
-            Berbasis Teknologi AHP
-          </div>
-          <h1
-            style={{
-              fontFamily: "Oswald,sans-serif",
-              fontWeight: 700,
-              fontSize: 48,
-              color: "#fff",
-              textTransform: "uppercase",
-              lineHeight: 1.1,
-              margin: "0 0 16px",
-            }}
-          >
-            TEMUKAN
-            <br />
-            PELATIH
-            <br />
-            <span style={{ color: "#FFD700" }}>TERBAIK</span>
-          </h1>
-          <p
-            style={{
-              color: "rgba(255,255,255,0.6)",
-              fontSize: 15,
-              lineHeight: 1.7,
-              maxWidth: 340,
-              margin: 0,
-            }}
-          >
-            Sistem rekomendasi cerdas berbasis Analytical Hierarchy Process
-            untuk帮助运动员找到最合适的教练。
-          </p>
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr",
-            gap: 12,
-            position: "relative",
-          }}
-        >
-          {[
-            ["50+", "Pelatih Aktif"],
-            ["10+", "Cabang Olahraga"],
-            ["200+", "Atlet Puas"],
-          ].map(([n, l]) => (
-            <div
-              key={l}
-              style={{
-                border: "1px solid rgba(74,58,255,0.4)",
-                borderRadius: 12,
-                padding: "14px 12px",
-                background: "rgba(74,58,255,0.1)",
-              }}
-            >
-              <p
-                style={{
-                  fontFamily: "Oswald,sans-serif",
-                  fontWeight: 700,
-                  fontSize: 28,
-                  color: "#fff",
-                  margin: 0,
-                }}
-              >
-                {n}
-              </p>
-              <p
-                style={{
-                  color: "rgba(255,255,255,0.5)",
-                  fontSize: 11,
-                  margin: 0,
-                }}
-              >
-                {l}
-              </p>
-            </div>
-          ))}
-        </div>
+    <div className="auth-root">
+      {/* Background */}
+      <div className="auth-bg">
+        <div className="auth-bg-overlay" />
+        <div className="auth-bg-grid" />
+        {/* Decorative circles */}
+        <div className="deco-circle deco-circle-1" />
+        <div className="deco-circle deco-circle-2" />
+        <div className="deco-circle deco-circle-3" />
       </div>
 
-      {/* RIGHT PANEL */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 32,
-          background: "#fff",
-        }}
-      >
-        <div style={{ width: "100%", maxWidth: 420 }}>
-          <div style={{ marginBottom: 28 }}>
-            <div
-              style={{
-                width: 40,
-                height: 3,
-                background: "#4A3AFF",
-                borderRadius: 2,
-                marginBottom: 12,
-              }}
-            />
-            <h2
-              style={{
-                fontFamily: "Oswald,sans-serif",
-                fontWeight: 700,
-                fontSize: 32,
-                textTransform: "uppercase",
-                letterSpacing: "0.04em",
-                color: "#1a1a2e",
-                margin: "0 0 6px",
-              }}
-            >
-              Masuk ke Akun
-            </h2>
-            <p style={{ color: "#9ca3af", fontSize: 14, margin: 0 }}>
-              Belum punya akun?{" "}
-              <Link
-                to="/register"
-                style={{
-                  color: "#4A3AFF",
-                  fontWeight: 700,
-                  textDecoration: "none",
-                }}
-              >
-                Daftar sekarang
-              </Link>
+      {/* Split layout */}
+      <div className="auth-layout">
+        {/* LEFT — Brand panel */}
+        <div className="auth-left">
+          {/* Logo */}
+          <div className="brand-logo">
+            <div className="brand-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z"
+                  fill="white"
+                  fillOpacity="0.9"
+                />
+              </svg>
+            </div>
+            <span className="brand-name">COACHFINDER</span>
+          </div>
+
+          {/* Hero text */}
+          <div className="brand-hero">
+            <div className="brand-badge">Berbasis Teknologi AHP</div>
+            <h1 className="brand-headline">
+              TEMUKAN
+              <br />
+              PELATIH
+              <br />
+              <span className="brand-accent">TERBAIK</span>
+            </h1>
+            <p className="brand-desc">
+              Sistem rekomendasi cerdas berbasis Analytical Hierarchy Process
+              untuk membantu atlet menemukan pelatih yang paling sesuai.
             </p>
           </div>
 
-          {/* ROLE SELECTOR — UX only, tidak dikirim ke backend */}
-          <div style={{ marginBottom: 20 }}>
-            <label
-              style={{
-                display: "block",
-                fontSize: 13,
-                fontWeight: 700,
-                marginBottom: 8,
-                color: "#1a1a2e",
-              }}
-            >
-              Masuk sebagai
-            </label>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr 1fr",
-                gap: 8,
-              }}
-            >
-              {ROLES.map(({ value, label, color, text }) => {
-                const active = selectedRole === value;
-                return (
+          {/* Stats */}
+          <div className="brand-stats">
+            {[
+              ["50+", "Pelatih Aktif"],
+              ["10+", "Cabang Olahraga"],
+              ["200+", "Atlet Puas"],
+            ].map(([n, l]) => (
+              <div key={l} className="stat-card">
+                <p className="stat-num">{n}</p>
+                <p className="stat-label">{l}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* RIGHT — Form panel (glass card) */}
+        <div className="auth-right">
+          <div className="glass-card">
+            {/* Card top accent */}
+            <div className="card-accent" />
+
+            <div className="card-header">
+              <h2 className="card-title">Masuk ke Akun</h2>
+              <p className="card-sub">
+                Belum punya akun?{" "}
+                <Link to="/register" className="card-link">
+                  Daftar sekarang
+                </Link>
+              </p>
+            </div>
+
+            {/* Role selector */}
+            <div className="role-section">
+              <p className="field-label">Masuk sebagai</p>
+              <div className="role-grid">
+                {ROLES.map(({ value, label }) => (
                   <button
                     key={value}
                     type="button"
@@ -349,209 +138,334 @@ export default function Login() {
                       setSelectedRole(value);
                       setError("");
                     }}
-                    style={{
-                      background: active ? color : "transparent",
-                      color: active ? text : "#6b7280",
-                      border: `2px solid ${active ? color : "#e5e7eb"}`,
-                      borderRadius: 10,
-                      padding: "10px 8px",
-                      fontFamily: "Oswald,sans-serif",
-                      fontWeight: 700,
-                      fontSize: 13,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                      cursor: "pointer",
-                      transition: "all 0.15s",
-                    }}
+                    className={`role-btn ${selectedRole === value ? "role-btn--active" : ""}`}
                   >
                     {label}
                   </button>
-                );
-              })}
+                ))}
+              </div>
             </div>
 
-            {selectedRole === "admin" && (
-              <div
-                style={{
-                  marginTop: 10,
-                  padding: 12,
-                  background: "#fffbeb",
-                  borderRadius: 10,
-                  border: "1px solid #fde68a",
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: 12,
-                    color: "#92400e",
-                    margin: 0,
-                    lineHeight: 1.6,
-                  }}
-                >
-                  <strong>ℹ️ Akun Admin</strong> tidak perlu registrasi — sudah
-                  dibuat langsung di database oleh sistem. Gunakan email &amp;
-                  password yang diberikan pengelolaan系统。
-                </p>
+            {/* Error */}
+            {error && (
+              <div className="error-box">
+                <HiExclamationCircle className="error-icon" />
+                <p className="error-msg">{error}</p>
               </div>
             )}
-          </div>
 
-          {/* ✅ ERROR ALERT - Popup error di dalam form */}
-          {error && (
-            <div
-              style={{
-                marginBottom: 16,
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 10,
-                padding: 14,
-                background: "#fef2f2",
-                border: "1px solid #fecaca",
-                borderRadius: 10,
-                animation: "shake 0.5s ease-in-out",
-              }}
-            >
-              <HiExclamationCircle
-                style={{
-                  color: "#ef4444",
-                  width: 18,
-                  height: 18,
-                  flexShrink: 0,
-                  marginTop: 1,
-                }}
-              />
-              <p
-                style={{
-                  color: "#991b1b",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  margin: 0,
-                }}
-              >
-                {error}
-              </p>
-            </div>
-          )}
-
-          <form
-            onSubmit={handleSubmit}
-            style={{ display: "flex", flexDirection: "column", gap: 16 }}
-          >
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  marginBottom: 6,
-                  color: "#1a1a2e",
-                }}
-              >
-                Email
-              </label>
-              <input
-                type="email"
-                required
-                value={form.email}
-                onChange={(e) => {
-                  setForm((f) => ({ ...f, email: e.target.value }));
-                  setError(""); // Clear error saat user mulai ketik
-                }}
-                placeholder="email@contoh.com"
-                className="psg-input"
-                style={error ? { borderColor: "#ef4444" } : {}}
-              />
-            </div>
-
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  marginBottom: 6,
-                  color: "#1a1a2e",
-                }}
-              >
-                Password
-              </label>
-              <div style={{ position: "relative" }}>
+            <form onSubmit={handleSubmit} className="auth-form">
+              <div className="field-group">
+                <label className="field-label">Email</label>
                 <input
-                  type={show ? "text" : "password"}
+                  type="email"
                   required
-                  value={form.password}
+                  value={form.email}
                   onChange={(e) => {
-                    setForm((f) => ({ ...f, password: e.target.value }));
-                    setError(""); // Clear error saat user mulai ketik
+                    setForm((f) => ({ ...f, email: e.target.value }));
+                    setError("");
                   }}
-                  placeholder="••••••••"
-                  className="psg-input"
-                  style={{
-                    paddingRight: 40,
-                    borderColor: error ? "#ef4444" : "initial",
-                  }}
+                  placeholder="email@contoh.com"
+                  className={`glass-input ${error ? "glass-input--error" : ""}`}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShow((s) => !s)}
-                  style={{
-                    position: "absolute",
-                    right: 12,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    border: "none",
-                    background: "none",
-                    cursor: "pointer",
-                    color: "#9ca3af",
-                  }}
-                >
-                  {show ? (
-                    <HiEyeOff style={{ width: 18, height: 18 }} />
-                  ) : (
-                    <HiEye style={{ width: 18, height: 18 }} />
-                  )}
-                </button>
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary"
-              style={{
-                justifyContent: "center",
-                padding: "12px 20px",
-                fontSize: 15,
-                fontFamily: "Oswald,sans-serif",
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                width: "100%",
-                marginTop: 4,
-                background: activeRole?.color,
-                color: activeRole?.text,
-                border: "none",
-                borderRadius: 10,
-                cursor: loading ? "not-allowed" : "pointer",
-                opacity: loading ? 0.7 : 1,
-              }}
-            >
-              {loading ? "Masuk..." : "Masuk →"}
-            </button>
-          </form>
+              <div className="field-group">
+                <label className="field-label">Password</label>
+                <div className="input-wrap">
+                  <input
+                    type={show ? "text" : "password"}
+                    required
+                    value={form.password}
+                    onChange={(e) => {
+                      setForm((f) => ({ ...f, password: e.target.value }));
+                      setError("");
+                    }}
+                    placeholder="••••••••"
+                    className={`glass-input ${error ? "glass-input--error" : ""}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShow((s) => !s)}
+                    className="eye-btn"
+                  >
+                    {show ? <HiEyeOff /> : <HiEye />}
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" disabled={loading} className="submit-btn">
+                {loading ? (
+                  <span className="spinner" />
+                ) : (
+                  <>
+                    Masuk <span className="btn-arrow">→</span>
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
 
       <style>{`
-        @media (max-width: 768px) {
-          .login-grid { grid-template-columns: 1fr !important; }
-          .login-left { display: none !important; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        .auth-root {
+          min-height: 100vh;
+          position: relative;
+          font-family: 'Inter', system-ui, sans-serif;
+          overflow: hidden;
         }
 
-        /* ✅ Animasi shake saat error */
+        /* ── Background ── */
+        .auth-bg {
+          position: fixed; inset: 0;
+          background: #0a0a1a;
+          z-index: 0;
+        }
+        .auth-bg-overlay {
+          position: absolute; inset: 0;
+          background: radial-gradient(ellipse 80% 60% at 20% 50%, rgba(74,58,255,0.18) 0%, transparent 60%),
+                      radial-gradient(ellipse 60% 60% at 80% 50%, rgba(30,10,80,0.4) 0%, transparent 60%);
+        }
+        .auth-bg-grid {
+          position: absolute; inset: 0;
+          background-image: linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+                            linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+          background-size: 40px 40px;
+        }
+        .deco-circle {
+          position: absolute; border-radius: 50%; border: 1px solid rgba(255,255,255,0.06);
+          pointer-events: none;
+        }
+        .deco-circle-1 { width: 500px; height: 500px; top: -100px; right: -100px; }
+        .deco-circle-2 { width: 300px; height: 300px; top: 50px; right: 50px; border-color: rgba(74,58,255,0.12); }
+        .deco-circle-3 { width: 200px; height: 200px; bottom: 80px; left: 80px; border-color: rgba(255,215,0,0.08); }
+
+        /* ── Layout ── */
+        .auth-layout {
+          position: relative; z-index: 1;
+          min-height: 100vh;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
+
+        /* ── Left panel ── */
+        .auth-left {
+          display: flex; flex-direction: column; justify-content: space-between;
+          padding: 48px 56px;
+        }
+
+        .brand-logo {
+          display: flex; align-items: center; gap: 12px;
+        }
+        .brand-icon {
+          width: 40px; height: 40px; border-radius: 10px;
+          background: #4A3AFF;
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0;
+        }
+        .brand-name {
+          font-family: 'Oswald', 'Arial Narrow', sans-serif;
+          font-weight: 700; font-size: 20px; letter-spacing: 0.12em;
+          color: #fff;
+        }
+
+        .brand-hero { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 48px 0; }
+        .brand-badge {
+          display: inline-block;
+          background: rgba(74,58,255,0.3);
+          border: 1px solid rgba(74,58,255,0.5);
+          color: #a8a0ff;
+          font-size: 11px; font-weight: 700;
+          letter-spacing: 0.12em; text-transform: uppercase;
+          padding: 5px 14px; border-radius: 999px;
+          margin-bottom: 24px;
+        }
+        .brand-headline {
+          font-family: 'Oswald', 'Arial Narrow', sans-serif;
+          font-weight: 700; font-size: 58px; line-height: 1.05;
+          color: #fff; text-transform: uppercase;
+          margin-bottom: 20px;
+        }
+        .brand-accent { color: #FFD700; }
+        .brand-desc {
+          color: rgba(255,255,255,0.45);
+          font-size: 15px; line-height: 1.75;
+          max-width: 360px;
+        }
+
+        .brand-stats {
+          display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+        }
+        .stat-card {
+          border: 1px solid rgba(74,58,255,0.25);
+          background: rgba(74,58,255,0.08);
+          border-radius: 12px;
+          padding: 16px 14px;
+        }
+        .stat-num {
+          font-family: 'Oswald', sans-serif;
+          font-weight: 700; font-size: 30px; color: #fff;
+          line-height: 1;
+        }
+        .stat-label {
+          color: rgba(255,255,255,0.4);
+          font-size: 11px; margin-top: 4px;
+        }
+
+        /* ── Right panel ── */
+        .auth-right {
+          display: flex; align-items: center; justify-content: center;
+          padding: 32px;
+        }
+
+        .glass-card {
+          width: 100%; max-width: 420px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 20px;
+          padding: 40px 36px;
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+          position: relative;
+          overflow: hidden;
+        }
+
+        /* Top shimmer accent */
+        .card-accent {
+          position: absolute; top: 0; left: 0; right: 0;
+          height: 2px;
+          background: linear-gradient(90deg, #4A3AFF, #7B6EFF, #4A3AFF);
+        }
+
+        .card-header { margin-bottom: 28px; }
+        .card-title {
+          font-family: 'Oswald', sans-serif;
+          font-weight: 700; font-size: 28px;
+          color: #fff; text-transform: uppercase;
+          letter-spacing: 0.06em;
+          margin-bottom: 8px;
+        }
+        .card-sub { font-size: 13px; color: rgba(255,255,255,0.4); }
+        .card-link { color: #7B6EFF; font-weight: 600; text-decoration: none; }
+        .card-link:hover { color: #a8a0ff; }
+
+        /* Role selector */
+        .role-section { margin-bottom: 20px; }
+        .role-grid {
+          display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+          margin-top: 8px;
+        }
+        .role-btn {
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 10px;
+          color: rgba(255,255,255,0.5);
+          font-family: 'Oswald', sans-serif;
+          font-weight: 700; font-size: 13px;
+          letter-spacing: 0.06em; text-transform: uppercase;
+          padding: 11px 8px; cursor: pointer;
+          transition: all 0.15s;
+        }
+        .role-btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.8); }
+        .role-btn--active {
+          background: #4A3AFF;
+          border-color: #4A3AFF;
+          color: #fff;
+        }
+
+        /* Error */
+        .error-box {
+          display: flex; align-items: flex-start; gap: 10px;
+          background: rgba(239,68,68,0.12);
+          border: 1px solid rgba(239,68,68,0.3);
+          border-radius: 10px;
+          padding: 12px 14px;
+          margin-bottom: 16px;
+          animation: shake 0.4s ease;
+        }
+        .error-icon { color: #f87171; width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
+        .error-msg { color: #fca5a5; font-size: 13px; font-weight: 500; }
+
         @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-          20%, 40%, 60%, 80% { transform: translateX(5px); }
+          0%,100% { transform: translateX(0); }
+          20%,60% { transform: translateX(-4px); }
+          40%,80% { transform: translateX(4px); }
+        }
+
+        /* Form */
+        .auth-form { display: flex; flex-direction: column; gap: 16px; }
+        .field-group { display: flex; flex-direction: column; gap: 7px; }
+        .field-label {
+          font-size: 12px; font-weight: 700;
+          letter-spacing: 0.08em; text-transform: uppercase;
+          color: rgba(255,255,255,0.5);
+        }
+        .input-wrap { position: relative; }
+
+        .glass-input {
+          width: 100%;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.12);
+          border-radius: 10px;
+          padding: 12px 16px;
+          color: #fff;
+          font-size: 14px;
+          outline: none;
+          transition: border-color 0.15s, background 0.15s;
+        }
+        .glass-input::placeholder { color: rgba(255,255,255,0.25); }
+        .glass-input:focus {
+          border-color: rgba(74,58,255,0.7);
+          background: rgba(74,58,255,0.08);
+        }
+        .glass-input--error { border-color: rgba(239,68,68,0.5) !important; }
+
+        .eye-btn {
+          position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+          background: none; border: none; cursor: pointer;
+          color: rgba(255,255,255,0.3); font-size: 18px;
+          display: flex; align-items: center;
+          transition: color 0.15s;
+        }
+        .eye-btn:hover { color: rgba(255,255,255,0.6); }
+
+        .submit-btn {
+          width: 100%; margin-top: 6px;
+          background: #4A3AFF;
+          border: none; border-radius: 10px;
+          color: #fff;
+          font-family: 'Oswald', sans-serif;
+          font-weight: 700; font-size: 16px;
+          letter-spacing: 0.1em; text-transform: uppercase;
+          padding: 14px;
+          cursor: pointer;
+          transition: background 0.15s, transform 0.1s;
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .submit-btn:hover:not(:disabled) { background: #5a4bff; }
+        .submit-btn:active:not(:disabled) { transform: scale(0.99); }
+        .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-arrow { font-size: 20px; line-height: 1; }
+
+        .spinner {
+          width: 18px; height: 18px;
+          border: 2px solid rgba(255,255,255,0.3);
+          border-top-color: #fff;
+          border-radius: 50%;
+          animation: spin 0.7s linear infinite;
+          display: inline-block;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+          .auth-layout { grid-template-columns: 1fr; }
+          .auth-left { display: none; }
+          .auth-right { padding: 24px 16px; align-items: flex-start; padding-top: 60px; }
+          .glass-card { padding: 32px 24px; }
         }
       `}</style>
     </div>

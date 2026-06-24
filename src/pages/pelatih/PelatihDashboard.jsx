@@ -491,39 +491,34 @@ export default function PelatihDashboard() {
     fetchDashboardData();
   }, []);
 
+  // Ganti fungsi fetchDashboardData di PelatihDashboard.jsx dengan ini:
+
   const fetchDashboardData = async () => {
     setLoading(true);
     setError("");
     try {
-      const [pelatihRes, rankingRes] = await Promise.all([
-        api.get("/api/pelatih"),
-        api.get("/api/public/ranking"),
+      const [profilRes, statsRes] = await Promise.all([
+        api.get("/api/pelatih/my-profile"),
+        api.get("/api/pelatih/my-stats"),
       ]);
-      const pelatihRaw =
-        pelatihRes.data.pelatih ||
-        pelatihRes.data.data?.pelatih ||
-        pelatihRes.data.data ||
-        [];
-      const myProfil = Array.isArray(pelatihRaw)
-        ? pelatihRaw.find((p) => p.nama === user?.nama) || pelatihRaw[0]
-        : null;
-      setProfil(myProfil);
 
-      const rankingRaw = rankingRes.data.data || rankingRes.data;
-      const rankList = rankingRaw.pelatih || [];
-      if (myProfil) {
-        const idx = rankList.findIndex(
-          (p) => p.pelatih_id === myProfil.pelatih_id,
-        );
-        setRanking({ rank: idx + 1, skorAHP: rankList[idx]?.skorAHP || 0 });
-      }
-      if (myProfil) {
+      const profil = profilRes.data.data || profilRes.data;
+      setProfil(profil);
+
+      const stats = statsRes.data.data || statsRes.data;
+      setRanking({
+        rank: stats.ranking,
+        skorAHP: stats.skorAHP,
+      });
+
+      if (profil?.pelatih_id) {
         const [bookingRes, jadwalRes] = await Promise.all([
-          api.get(`/api/public/bookings/${myProfil.pelatih_id}`),
           api
-            .get(`/api/pelatih/${myProfil.pelatih_id}/jadwal`)
+            .get(`/api/public/bookings/${profil.pelatih_id}`)
             .catch(() => ({ data: [] })),
+          api.get("/api/pelatih/jadwal").catch(() => ({ data: [] })), // ✅ fix: pakai endpoint jadwal sendiri
         ]);
+
         const bRaw = bookingRes.data.data || bookingRes.data;
         setBookings(bRaw.bookings || (Array.isArray(bRaw) ? bRaw : []));
 
