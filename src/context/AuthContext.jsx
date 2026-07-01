@@ -84,9 +84,31 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
+  // ── Update user (partial) + sync ke localStorage ────────────
+  // Bisa dipanggil dengan object atau updater function:
+  //   updateUser({ foto: "..." })
+  //   updateUser((prev) => ({ ...prev, foto: "..." }))
+  const updateUser = useCallback((updater) => {
+    setUser((prev) => {
+      const updated =
+        typeof updater === "function" ? updater(prev) : { ...prev, ...updater };
+      localStorage.setItem("user", JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, logout, api }}
+      value={{
+        user,
+        loading,
+        login,
+        register,
+        logout,
+        api,
+        setUser,
+        updateUser,
+      }}
     >
       {children}
     </AuthContext.Provider>

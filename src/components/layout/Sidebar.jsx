@@ -15,70 +15,130 @@ import {
   HiChevronRight,
   HiUser,
   HiStar,
+  HiHeart,
+  HiCog6Tooth,
+  HiQuestionMarkCircle,
 } from "react-icons/hi2";
 import { useAuth } from "../../context/AuthContext";
-import ThemeToggle from "../ui/ThemeToggle";
-import Avatar from "../ui/Avatar";  
+import Avatar from "../ui/Avatar";
 import clsx from "clsx";
 import LOGOSF from "../assets/logosf.png";
 
 const adminLinks = [
-  { to: "/admin/dashboard", icon: HiSquares2X2, label: "Dashboard" },
-  { to: "/admin/pelatih", icon: HiUsers, label: "Manajemen Pelatih" },
-  { to: "/admin/verifikasi", icon: HiCheckBadge, label: "Verifikasi" },
-  { to: "/admin/cabor", icon: HiTrophy, label: "Cabang Olahraga" },
-  { to: "/admin/ranking", icon: HiPresentationChartBar, label: "Ranking AHP" },
-  { to: "/admin/pemesanan", icon: HiClipboardDocumentList, label: "Pemesanan" },
-];
-const pelatihLinks = [
-  { to: "/pelatih/dashboard", icon: HiSquares2X2, label: "Dashboard" },
-  { to: "/pelatih/profil", icon: HiUser, label: "Profil Saya" },
-  { to: "/pelatih/jadwal", icon: HiCalendarDays, label: "Jadwal Latihan" },
-  { to: "/pelatih/status", icon: HiStar, label: "Status & Ranking" },
-];
-const userLinks = [
-  { to: "/user/dashboard", icon: HiSquares2X2, label: "Dashboard" },
-  { to: "/user/cari-pelatih", icon: HiMagnifyingGlass, label: "Cari Pelatih" },
   {
-    to: "/user/riwayat",
+    to: "/admin/dashboard",
+    icon: HiSquares2X2,
+    label: "Dashboard",
+    group: "MAIN",
+  },
+  {
+    to: "/admin/pelatih",
+    icon: HiUsers,
+    label: "Manajemen Pelatih",
+    group: "MAIN",
+  },
+  {
+    to: "/admin/verifikasi",
+    icon: HiCheckBadge,
+    label: "Verifikasi",
+    group: "MAIN",
+  },
+  {
+    to: "/admin/cabor",
+    icon: HiTrophy,
+    label: "Cabang Olahraga",
+    group: "MAIN",
+  },
+  {
+    to: "/admin/ranking",
+    icon: HiPresentationChartBar,
+    label: "Ranking AHP",
+    group: "MAIN",
+  },
+  {
+    to: "/admin/pemesanan",
     icon: HiClipboardDocumentList,
-    label: "Riwayat Booking",
+    label: "Pemesanan",
+    group: "MAIN",
   },
 ];
 
-// Logo SVG — icon PNG + wordmark teks
+const pelatihLinks = [
+  {
+    to: "/pelatih/dashboard",
+    icon: HiSquares2X2,
+    label: "Dashboard",
+    group: "MAIN",
+  },
+  { to: "/pelatih/profil", icon: HiUser, label: "Profil Saya", group: "MAIN" },
+  {
+    to: "/pelatih/jadwal",
+    icon: HiCalendarDays,
+    label: "Jadwal Latihan",
+    group: "MAIN",
+  },
+  {
+    to: "/pelatih/status",
+    icon: HiStar,
+    label: "Status & Ranking",
+    group: "MAIN",
+  },
+];
+
+const userLinks = [
+  {
+    to: "/user/dashboard",
+    icon: HiSquares2X2,
+    label: "Beranda",
+    group: "MAIN",
+  },
+  {
+    to: "/user/cari-pelatih",
+    icon: HiMagnifyingGlass,
+    label: "Cari Pelatih",
+    group: "MAIN",
+  },
+  {
+    to: "/user/riwayat",
+    icon: HiCalendarDays,
+    label: "Jadwal Riwayat",
+    group: "MAIN",
+  },
+  { to: "/user/favorit", icon: HiHeart, label: "Favorit", group: "MAIN" },
+];
+
 function LogoFull() {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2.5">
       <img
         src={LOGOSF}
         alt="SportCoach"
-        className="h-10 w-10 object-contain flex-shrink-0"
+        className="h-8 w-8 object-contain flex-shrink-0"
       />
       <div className="flex flex-col leading-tight">
         <span
           style={{
             fontWeight: 700,
-            fontSize: "17px",
+            fontSize: "15px",
             letterSpacing: "-0.3px",
-            color: "white",
             lineHeight: 1.1,
           }}
+          className="text-slate-900 dark:text-white"
         >
           Sport<span style={{ color: "#F59E0B" }}>Coach</span>
         </span>
         <span
           style={{
-            fontSize: "9px",
-            letterSpacing: "1.8px",
-            color: "rgba(255,255,255,0.45)",
+            fontSize: "8px",
+            letterSpacing: "1.5px",
             fontWeight: 500,
             lineHeight: 1,
-            marginTop: "3px",
+            marginTop: "2px",
             textTransform: "uppercase",
           }}
+          className="text-slate-400 dark:text-slate-500"
         >
-          Sistem Rekomendasi Pelatih
+          Rekomendasi Pelatih
         </span>
       </div>
     </div>
@@ -87,7 +147,7 @@ function LogoFull() {
 
 function LogoCollapsed() {
   return (
-    <img src={LOGOSF} alt="SportCoach" className="h-9 w-9 object-contain" />
+    <img src={LOGOSF} alt="SportCoach" className="h-8 w-8 object-contain" />
   );
 }
 
@@ -109,89 +169,114 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
     navigate("/");
   };
 
-  const SidebarContent = ({ mobile = false }) => (
-    <div className="flex flex-col h-full">
-      {/* Logo */}
-      <div
-        className={clsx(
-          "flex items-center px-4 py-5 border-b border-white/10",
-          collapsed && !mobile ? "justify-center px-2" : "justify-start",
-        )}
-      >
-        {collapsed && !mobile ? <LogoCollapsed /> : <LogoFull />}
-      </div>
+  const SidebarContent = ({ mobile = false }) => {
+    const mainLinks = links.filter((l) => l.group === "MAIN");
 
-      {/* Role badge */}
-      {(!collapsed || mobile) && (
-        <div className="px-4 py-3">
-          <div className="flex items-center gap-3 bg-white/5 rounded-xl p-3">
-            <Avatar
-              initials={user?.initials || "?"}
-              size="sm"
-              id={user?.id || 0}
-            />
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-white truncate">
-                {user?.nama?.split(" ")[0] || "User"}
-              </p>
-              <p className="text-xs text-slate-400 capitalize">{user?.role}</p>
-            </div>
-          </div>
+    return (
+      <div className="flex flex-col h-full bg-white dark:bg-slate-800 transition-colors">
+        {/* Logo */}
+        <div
+          className={clsx(
+            "flex items-center px-5 py-5 border-b border-slate-100 dark:border-slate-700",
+            collapsed && !mobile ? "justify-center px-3" : "justify-start",
+          )}
+        >
+          {collapsed && !mobile ? <LogoCollapsed /> : <LogoFull />}
         </div>
-      )}
 
-      {/* Nav links */}
-      <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto scrollbar-hide">
-        {links.map((link) => {
-          const active = location.pathname === link.to;
-          return (
-            <Link
-              key={link.to}
-              to={link.to}
-              onClick={mobile ? onMobileClose : undefined}
-              title={collapsed && !mobile ? link.label : undefined}
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-4 overflow-y-auto scrollbar-hide">
+          {(!collapsed || mobile) && (
+            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 mb-2">
+              Main
+            </p>
+          )}
+          <div className="space-y-0.5">
+            {mainLinks.map((link) => {
+              const active = location.pathname === link.to;
+              return (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  onClick={mobile ? onMobileClose : undefined}
+                  title={collapsed && !mobile ? link.label : undefined}
+                  className={clsx(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
+                    active
+                      ? "bg-blue-600 text-white"
+                      : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-slate-100",
+                    collapsed && !mobile && "justify-center px-0 py-3",
+                  )}
+                >
+                  <link.icon className="w-5 h-5 flex-shrink-0" />
+                  {(!collapsed || mobile) && <span>{link.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Settings group */}
+          {(!collapsed || mobile) && (
+            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 mb-2 mt-6">
+              Settings
+            </p>
+          )}
+          <div className="space-y-0.5 mt-1">
+            <button
               className={clsx(
-                "sidebar-link",
-                active && "active",
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-slate-100 transition-all",
                 collapsed && !mobile && "justify-center px-0 py-3",
               )}
             >
-              <link.icon className="w-5 h-5 flex-shrink-0" />
-              {(!collapsed || mobile) && <span>{link.label}</span>}
-            </Link>
-          );
-        })}
-      </nav>
+              <HiCog6Tooth className="w-5 h-5 flex-shrink-0" />
+              {(!collapsed || mobile) && (
+                <span className="flex-1 text-left">Settings</span>
+              )}
+              {(!collapsed || mobile) && (
+                <HiChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600" />
+              )}
+            </button>
+          </div>
+        </nav>
 
-      {/* Bottom */}
-      <div className="px-3 py-4 border-t border-white/10 space-y-1">
-        <ThemeToggle className="w-full rounded-xl justify-center text-slate-400 hover:text-white hover:bg-white/10" />
-        <button
-          onClick={handleLogout}
-          className={clsx(
-            "sidebar-link w-full text-red-400 hover:text-red-300 hover:bg-red-500/10",
-            collapsed && !mobile && "justify-center px-0",
-          )}
-        >
-          <HiArrowLeftOnRectangle className="w-5 h-5 flex-shrink-0" />
-          {(!collapsed || mobile) && <span>Keluar</span>}
-        </button>
+        {/* Bottom: Help + Logout */}
+        <div className="px-3 pb-4 border-t border-slate-100 dark:border-slate-700 pt-3 space-y-0.5">
+          <button
+            className={clsx(
+              "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-slate-100 transition-all",
+              collapsed && !mobile && "justify-center px-0",
+            )}
+          >
+            <HiQuestionMarkCircle className="w-5 h-5 flex-shrink-0" />
+            {(!collapsed || mobile) && <span>Help</span>}
+          </button>
+          <button
+            onClick={handleLogout}
+            className={clsx(
+              "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 dark:hover:text-red-300 transition-all",
+              collapsed && !mobile && "justify-center px-0",
+            )}
+          >
+            <HiArrowLeftOnRectangle className="w-5 h-5 flex-shrink-0" />
+            {(!collapsed || mobile) && <span>Logout</span>}
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <>
       {/* Desktop sidebar */}
       <motion.aside
-        animate={{ width: collapsed ? 72 : 256 }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="hidden lg:flex flex-col relative h-screen bg-slate-900 dark:bg-slate-950 border-r border-white/5 flex-shrink-0"
+        animate={{ width: collapsed ? 68 : 220 }}
+        transition={{ duration: 0.25, ease: "easeInOut" }}
+        className="hidden lg:flex flex-col relative h-screen bg-white dark:bg-slate-800 border-r border-slate-100 dark:border-slate-700 flex-shrink-0 transition-colors"
       >
         <SidebarContent />
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-slate-900 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors z-10"
+          className="absolute -right-3 top-[72px] w-6 h-6 rounded-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 shadow-sm flex items-center justify-center text-slate-400 dark:text-slate-300 hover:text-slate-700 dark:hover:text-white transition-colors z-10"
         >
           {collapsed ? (
             <HiChevronRight className="w-3 h-3" />
@@ -209,15 +294,15 @@ export default function Sidebar({ mobileOpen, onMobileClose }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+              className="fixed inset-0 bg-black/30 z-40 lg:hidden"
               onClick={onMobileClose}
             />
             <motion.aside
-              initial={{ x: -280 }}
+              initial={{ x: -260 }}
               animate={{ x: 0 }}
-              exit={{ x: -280 }}
+              exit={{ x: -260 }}
               transition={{ type: "spring", stiffness: 400, damping: 40 }}
-              className="fixed left-0 top-0 bottom-0 w-72 bg-slate-900 dark:bg-slate-950 z-50 lg:hidden"
+              className="fixed left-0 top-0 bottom-0 w-64 bg-white dark:bg-slate-800 z-50 lg:hidden border-r border-slate-100 dark:border-slate-700"
             >
               <SidebarContent mobile />
             </motion.aside>

@@ -1,4 +1,3 @@
-/** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   darkMode: "class",
@@ -6,18 +5,17 @@ export default {
     extend: {
       fontFamily: {
         sans: [
+          "Serotiva",
           "-apple-system",
           "BlinkMacSystemFont",
-          "SF Pro Text",
-          "SF Pro Display",
           "Helvetica Neue",
           "Inter",
           "sans-serif",
         ],
         display: [
+          "Serotiva",
           "-apple-system",
           "BlinkMacSystemFont",
-          "SF Pro Display",
           "Helvetica Neue",
           "Inter",
           "sans-serif",

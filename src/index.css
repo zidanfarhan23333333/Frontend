@@ -2,7 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&display=swap");
+@font-face {
+  font-family: "Serotiva";
+  src:
+    url("./assets/fonts/Serotiva.woff2") format("woff2"),
+    url("./assets/fonts/Serotiva.woff") format("woff"),
+    url("./assets/fonts/Serotiva.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Serotiva";
+  src:
+    url("./assets/fonts/Serotiva-Medium.woff2") format("woff2"),
+    url("./assets/fonts/Serotiva-Medium.woff") format("woff"),
+    url("./assets/fonts/Serotiva-Medium.ttf") format("truetype");
+  font-weight: 500 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Serotiva";
+  src:
+    url("./assets/fonts/Serotiva-Bold.woff2") format("woff2"),
+    url("./assets/fonts/Serotiva-Bold.woff") format("woff"),
+    url("./assets/fonts/Serotiva-Bold.ttf") format("truetype");
+  font-weight: 700 900;
+  font-style: normal;
+  font-display: swap;
+}
 
 @layer base {
   :root {
@@ -18,8 +49,8 @@
     --sidebar-active: #2563eb;
 
     --font-sf:
-      -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
-      "Helvetica Neue", "Inter", ui-sans-serif, sans-serif;
+      "Serotiva", -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Inter",
+      ui-sans-serif, sans-serif;
   }
 
   .dark {
@@ -80,7 +111,6 @@
 }
 
 @layer components {
-  /* Buttons */
   .btn-primary {
     @apply inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-semibold
            text-white text-[13px] tracking-[-0.01em]
@@ -106,7 +136,6 @@
            transition-colors duration-150;
   }
 
-  /* Cards */
   .card {
     @apply bg-white dark:bg-[#1c1c1e]
            rounded-2xl
@@ -123,7 +152,6 @@
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   }
 
-  /* Form */
   .input-field {
     @apply w-full px-4 py-2.5 rounded-xl
            border border-[#e5e5ea] dark:border-[#2c2c2e]
@@ -135,7 +163,6 @@
            transition-all duration-150;
   }
 
-  /* Badges */
   .badge {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-[-0.01em];
   }
@@ -155,7 +182,6 @@
     @apply badge bg-[#f5f5f7] text-[#6e6e73] dark:bg-[#2c2c2e] dark:text-[#aeaeb2];
   }
 
-  /* Typography */
   .section-title {
     @apply text-[32px] font-bold text-[#0a0a0a] dark:text-white tracking-[-0.03em];
   }
@@ -164,13 +190,11 @@
     @apply bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent;
   }
 
-  /* Glass — untuk section gelap */
   .glass {
     background-color: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  /* Sidebar */
   .sidebar-link {
     @apply flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium
            text-[#8e8e93] hover:text-white
@@ -184,12 +208,10 @@
     background-color: rgba(255, 255, 255, 0.12);
   }
 
-  /* Stat card */
   .stat-card {
     @apply card p-5 flex flex-col gap-3;
   }
 
-  /* Table */
   .table-header {
     @apply text-left text-[11px] font-semibold uppercase tracking-wider
            text-[#aeaeb2] dark:text-[#636366] px-4 py-3;
@@ -203,7 +225,6 @@
            transition-colors duration-100;
   }
 
-  /* Shadow sport */
   .shadow-sport {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   }
@@ -238,7 +259,6 @@
   }
 }
 
-/* Scrollbar */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -257,7 +277,6 @@
   background: #3a3a3c;
 }
 
-/* Page transition */
 .page-enter {
   opacity: 0;
   transform: translateY(6px);

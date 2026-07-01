@@ -86,6 +86,7 @@ export function PelatihProfil() {
         if (profil) {
           setMyId(profil.pelatih_id);
           setFotoUrl(profil.foto || null);
+          console.log("profil.foto:", profil.foto);
           setForm({
             nama: profil.nama || "",
             cabor_id: String(profil.cabor_id || ""),
@@ -141,8 +142,13 @@ export function PelatihProfil() {
     }
   };
 
+  // Tambah state timestamp di atas fotoUrl
+  const [fotoTs, setFotoTs] = useState(Date.now());
+
+  // handleUploadFoto — tambah setFotoTs
   const handleUploadFoto = async (e) => {
     const file = e.target.files?.[0];
+    console.log("File selected:", file);
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
       toast.error("Ukuran foto maksimal 2MB");
@@ -156,6 +162,7 @@ export function PelatihProfil() {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setFotoUrl(res.data.data.foto);
+      setFotoTs(Date.now()); // ← tambah ini
       toast.success("Foto berhasil diupload!");
     } catch (err) {
       toast.error(err.response?.data?.error || "Gagal upload foto");
@@ -196,7 +203,7 @@ export function PelatihProfil() {
               <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-100">
                 {fotoUrl ? (
                   <img
-                    src={`http://localhost:3000${fotoUrl}`}
+                    src={`http://localhost:3000${fotoUrl}?t=${fotoTs}`} // ← tambah ?t=${fotoTs}
                     alt={form.nama}
                     className="w-full h-full object-cover block"
                   />
