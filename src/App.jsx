@@ -40,7 +40,7 @@ import {
 } from "./pages/user/UserPages";
 
 // ✅ Halaman baru: edit profil & ganti password user
-import { UserProfil, UserGantiPassword } from "./pages/user/UserProfilPages";
+import { UserProfil, UserGantiPassword } from "./pages/user/userProfilPages";
 
 export default function App() {
   return (
