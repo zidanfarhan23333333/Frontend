@@ -295,7 +295,18 @@ function CoachCard({ coach, delay = 0, onFav, isFav }) {
       <div className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
-            <Avatar initials={coach.initials} size="md" id={coach.id} />
+            {coach.foto ? (
+              <img
+                src={coach.foto}
+                alt={coach.nama}
+                className="w-10 h-10 rounded-xl object-cover flex-shrink-0"
+                onError={(e) => {
+                  e.target.style.display = "none";
+                }}
+              />
+            ) : (
+              <Avatar initials={coach.initials} size="md" id={coach.id} />
+            )}
             <div>
               <p className="text-[14px] font-semibold text-[#0a0a0a] leading-tight">
                 {coach.nama?.split(" ").slice(0, 2).join(" ")}
@@ -983,6 +994,7 @@ export function UserDetailPelatih() {
               id: fromList.id,
               pelatih_id: fromList.id,
               nama: raw?.nama || fromList.nama,
+              foto: raw?.foto || fromList.foto || null, // ← tambah ini
               cabor: raw?.cabang?.nama_cabor || fromList.cabor,
               color: CABOR_COLORS[raw?.cabang?.nama_cabor] || fromList.color,
               initials:
@@ -1009,6 +1021,7 @@ export function UserDetailPelatih() {
               ...raw,
               id: raw?.pelatih_id,
               pelatih_id: raw?.pelatih_id,
+              foto: raw?.foto || null, // ← tambah ini
               cabor: raw?.cabang?.nama_cabor || "-",
               initials: raw?.nama?.slice(0, 2).toUpperCase(),
               skorAHP: 0,
@@ -1020,6 +1033,9 @@ export function UserDetailPelatih() {
             };
 
         setCoach(enriched);
+        console.log("coach.foto:", enriched.foto);
+        console.log("raw.foto:", raw?.foto);
+        console.log("fromList.foto:", fromList?.foto);
       })
       .catch(() => toast.error("Gagal memuat detail pelatih"))
       .finally(() => setLoading(false));
@@ -1075,8 +1091,20 @@ export function UserDetailPelatih() {
           >
             <HiHeart className="w-4 h-4" />
           </button>
+          {/* Di hero section — ini yang salah */}
           <div className="relative px-6 pb-5 flex items-end gap-4">
-            <Avatar initials={coach.initials} size="xl" id={coach.id} />
+            {coach.foto ? (
+              <img
+                src={coach.foto}
+                alt={coach.nama}
+                className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 border-2 border-white/30"
+                onError={(e) => {
+                  e.target.style.display = "none";
+                }}
+              />
+            ) : (
+              <Avatar initials={coach.initials} size="xl" id={coach.id} />
+            )}
             <div>
               <p className="text-white/70 text-[12px] mb-0.5">{coach.cabor}</p>
               <h1 className="text-[24px] font-bold text-white tracking-[-0.5px]">

@@ -41,8 +41,11 @@ const navItems = [
   { to: "/user/favorit", icon: HiHeart, label: "Favorit", group: "MAIN" },
 ];
 
+// SESUDAH (benar):
 function fotoUrl(foto) {
-  return foto ? `http://localhost:3000${foto}` : null;
+  if (!foto) return null;
+  if (foto.startsWith("http")) return foto; // Cloudinary URL → pakai langsung
+  return `http://localhost:3000${foto}`; // path lokal → tambah base URL
 }
 
 // ─── Notification Panel ──────────────────────────────────────────────────────
@@ -187,6 +190,9 @@ function ProfileDropdown({
                     src={fotoLocal || fotoUrl(user?.foto)}
                     alt={user?.nama}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = "none";
+                    }}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-sm font-bold text-blue-600">
@@ -405,7 +411,7 @@ export default function UserLayout() {
     api
       .get("/api/notifikasi/unread-count")
       .then((res) => setUnreadCount(res.data.data?.count || 0))
-      .catch(() => setUnreadCount(0));
+      .catch(() => setUnreadCount(0)); // sudah ada, pastikan tidak throw
   }, []);
 
   const handleLogout = () => {

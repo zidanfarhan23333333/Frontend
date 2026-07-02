@@ -69,7 +69,13 @@ export function UserProfil() {
     }
   };
 
-  const fotoSrc = fotoLocal || (user?.foto ? `${BASE_URL}${user.foto}` : null);
+  const fotoSrc =
+    fotoLocal ||
+    (user?.foto
+      ? user.foto.startsWith("http")
+        ? user.foto
+        : `${BASE_URL}${user.foto}`
+      : null);
 
   return (
     <div className="p-6 lg:p-8 max-w-xl">
