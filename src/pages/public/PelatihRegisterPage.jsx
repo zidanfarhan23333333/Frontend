@@ -1,9 +1,15 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { HiTrophy, HiArrowLeft, HiArrowRight } from "react-icons/hi2";
+import { HiArrowLeft, HiArrowRight, HiExclamationCircle } from "react-icons/hi";
+import { HiEye, HiEyeOff } from "react-icons/hi";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
+import assetbola from "../../components/assets/assetbola.png";
+import assetbasket from "../../components/assets/assetbasket.png";
+import assettkd from "../../components/assets/assettkd.png";
+import assetvoli from "../../components/assets/assetvoli.png";
+
+const HERO_IMAGES = [assetbola, assetbasket, assettkd, assetvoli];
 
 const steps = ["Data Diri", "Keahlian", "Konfirmasi"];
 
@@ -49,6 +55,8 @@ export default function PelatihRegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [caborList, setCaborList] = useState([]);
+  const [show, setShow] = useState(false);
+  const [heroIndex, setHeroIndex] = useState(0);
   const [form, setForm] = useState({
     nama: "",
     email: "",
@@ -69,7 +77,6 @@ export default function PelatihRegisterPage() {
   const { register, login, api } = useAuth();
   const navigate = useNavigate();
 
-  // Fetch cabor dari backend
   useEffect(() => {
     api
       .get("/api/cabor")
@@ -78,6 +85,13 @@ export default function PelatihRegisterPage() {
         setCaborList(Array.isArray(data) ? data : []);
       })
       .catch(() => toast.error("Gagal memuat daftar cabor"));
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setHeroIndex((i) => (i + 1) % HERO_IMAGES.length);
+    }, 4000);
+    return () => clearInterval(interval);
   }, []);
 
   const set = (k, v) => {
@@ -151,270 +165,314 @@ export default function PelatihRegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-xl"
-      >
-        {/* Header */}
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-              <HiTrophy className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-display font-black text-2xl text-slate-900 dark:text-white">
-              Sport<span className="text-emerald-500">Coach</span>
-            </span>
-          </Link>
-          <h2 className="font-display font-black text-3xl text-slate-900 dark:text-white">
-            Daftar sebagai Pelatih
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">
-            Bergabunglah dengan jaringan pelatih terpercaya
-          </p>
-        </div>
-
-        {/* Step indicator */}
-        <div className="flex items-center justify-center mb-8 gap-3">
-          {steps.map((s, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-                  i < step
-                    ? "bg-emerald-500 text-white"
-                    : i === step
-                      ? "bg-primary-600 text-white"
-                      : "bg-slate-200 dark:bg-slate-700 text-slate-500"
-                }`}
-              >
-                {i < step ? "✓" : i + 1}
-              </div>
-              <span
-                className={`text-sm font-semibold hidden sm:block ${i === step ? "text-primary-600" : "text-slate-400"}`}
-              >
-                {s}
-              </span>
-              {i < steps.length - 1 && (
-                <div
-                  className={`w-8 h-0.5 ${i < step ? "bg-emerald-500" : "bg-slate-200 dark:bg-slate-700"}`}
-                />
-              )}
-            </div>
+    <div className="auth-page">
+      <div className="auth-card">
+        {/* LEFT — hero image panel */}
+        <div className="hero-panel">
+          {HERO_IMAGES.map((img, i) => (
+            <img
+              key={img}
+              src={img}
+              alt="Athletes"
+              className={`hero-img ${i === heroIndex ? "hero-img--active" : ""}`}
+            />
           ))}
+          <div className="hero-overlay" />
+
+          <div className="hero-logo">
+            <span className="logo-mark">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M4 20L12 4L14 8L9 20H4Z" fill="#2563EB" />
+                <path d="M11 20L17 8L19 12L16 20H11Z" fill="#60A5FA" />
+              </svg>
+            </span>
+            <span className="logo-text">Sport Coach</span>
+          </div>
+
+          <div className="hero-bottom">
+            <h1 className="hero-headline">
+              Bergabung Jadi
+              <br />
+              Pelatih Terpercaya
+            </h1>
+            <p className="hero-desc">
+              Daftarkan dirimu sebagai pelatih dan jangkau lebih banyak siswa
+              maupun masyarakat umum yang membutuhkan bimbingan olahragamu.
+            </p>
+
+            <div className="hero-dots">
+              {HERO_IMAGES.map((_, i) => (
+                <button
+                  key={i}
+                  className={`hero-dot ${i === heroIndex ? "hero-dot--active" : ""}`}
+                  onClick={() => setHeroIndex(i)}
+                  aria-label={`Slide ${i + 1}`}
+                  type="button"
+                />
+              ))}
+            </div>
+          </div>
         </div>
 
-        <div className="card p-8">
-          {/* Error banner */}
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-5 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 rounded-2xl"
-            >
-              <p className="text-sm text-red-700 dark:text-red-300 font-medium">
-                {error}
-              </p>
-            </motion.div>
-          )}
+        {/* RIGHT — multi-step form panel */}
+        <div className="form-panel">
+          <div className="form-inner">
+            <h2 className="form-title">Daftar sebagai Pelatih</h2>
+            <p className="form-sub">
+              Sudah punya akun?{" "}
+              <Link to="/login" className="form-link">
+                Masuk di sini
+              </Link>
+            </p>
 
-          {/* Step 0 — Data Diri */}
-          {step === 0 && (
-            <div className="space-y-5">
-              <h3 className="font-display font-bold text-xl text-slate-900 dark:text-white mb-4">
-                Data Diri
-              </h3>
-              {[
-                ["nama", "Nama Lengkap", "text", "Hendra Raafliadi, S. Pd"],
-                ["email", "Email", "email", "pelatih@email.com"],
-                ["password", "Password", "password", "Min. 6 karakter"],
-                ["umur", "Umur (opsional)", "number", "25"],
-                ["domisili", "Domisili / Kota", "text", "Kabupaten Magelang"],
-              ].map(([k, l, t, p]) => (
-                <div key={k}>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                    {l}
-                  </label>
-                  <input
-                    type={t}
-                    value={form[k]}
-                    onChange={(e) => set(k, e.target.value)}
-                    className="input-field"
-                    placeholder={p}
-                  />
+            {/* Step indicator */}
+            <div className="step-indicator">
+              {steps.map((s, i) => (
+                <div key={i} className="step-item">
+                  <div
+                    className={`step-circle ${
+                      i < step
+                        ? "step-circle--done"
+                        : i === step
+                          ? "step-circle--active"
+                          : ""
+                    }`}
+                  >
+                    {i < step ? "✓" : i + 1}
+                  </div>
+                  <span
+                    className={`step-label ${i === step ? "step-label--active" : ""}`}
+                  >
+                    {s}
+                  </span>
+                  {i < steps.length - 1 && (
+                    <div
+                      className={`step-line ${i < step ? "step-line--done" : ""}`}
+                    />
+                  )}
                 </div>
               ))}
             </div>
-          )}
 
-          {/* Step 1 — Keahlian */}
-          {step === 1 && (
-            <div className="space-y-5">
-              <h3 className="font-display font-bold text-xl text-slate-900 dark:text-white mb-4">
-                Keahlian & Kompetensi
-              </h3>
-
-              {/* Cabang Olahraga */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Cabang Olahraga
-                </label>
-                <select
-                  value={form.cabor_id}
-                  onChange={(e) => {
-                    const selected = caborList.find(
-                      (c) => String(c.cabor_id) === e.target.value,
-                    );
-                    set("cabor_id", e.target.value);
-                    set("cabor_nama", selected?.nama_cabor || "");
-                  }}
-                  className="input-field"
-                >
-                  <option value="">Pilih Cabang Olahraga</option>
-                  {caborList.map((c) => (
-                    <option key={c.cabor_id} value={c.cabor_id}>
-                      {c.nama_cabor}
-                    </option>
-                  ))}
-                </select>
+            {error && (
+              <div className="error-box">
+                <HiExclamationCircle className="error-icon" />
+                <p className="error-msg">{error}</p>
               </div>
+            )}
 
-              {/* Spesialis */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Spesialis (opsional)
-                </label>
-                <input
-                  type="text"
-                  value={form.spesialis}
-                  onChange={(e) => set("spesialis", e.target.value)}
-                  className="input-field"
-                  placeholder="Antar Sekolah, Club, dan Daerah"
-                />
-              </div>
+            {/* Step 0 — Data Diri */}
+            {step === 0 && (
+              <div className="auth-form">
+                <div className="field-group">
+                  <label className="field-label">Nama Lengkap</label>
+                  <input
+                    type="text"
+                    value={form.nama}
+                    onChange={(e) => set("nama", e.target.value)}
+                    placeholder="Hendra Raafliadi, S. Pd"
+                    className="plain-input"
+                  />
+                </div>
 
-              {/* Pengalaman Melatih */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Pengalaman Melatih
-                </label>
-                <p className="text-xs text-slate-400 mb-2">
-                  Tulis satu per baris (nama sekolah, tim, atau klub). Jumlah
-                  entri = nilai pengalaman (max 5).
-                </p>
-                <textarea
-                  value={form.pengalaman_melatih}
-                  onChange={(e) => set("pengalaman_melatih", e.target.value)}
-                  className="input-field min-h-[140px] resize-none"
-                  placeholder={`SD N Pucungrejo 1\nSMP IT Ihsanul Fikri\nTIM Putra U19 KAB. Magelang`}
-                />
-                {form.pengalaman_melatih && (
-                  <p className="text-xs text-primary-600 mt-1">
-                    {Math.min(
-                      5,
-                      form.pengalaman_melatih.split("\n").filter(Boolean)
-                        .length,
-                    )}{" "}
-                    entri terdeteksi → nilai pengalaman:{" "}
-                    {Math.min(
-                      5,
-                      form.pengalaman_melatih.split("\n").filter(Boolean)
-                        .length,
-                    )}
-                    /5
-                  </p>
-                )}
-              </div>
+                <div className="field-group">
+                  <label className="field-label">Email</label>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => set("email", e.target.value)}
+                    placeholder="pelatih@email.com"
+                    className="plain-input"
+                  />
+                </div>
 
-              {/* Level Lisensi */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Level Lisensi
-                </label>
-                <select
-                  value={form.lisensi}
-                  onChange={(e) => set("lisensi", e.target.value)}
-                  className="input-field"
-                >
-                  <option value="">Pilih level lisensi</option>
-                  <option value="1">1 - Belum ada lisensi</option>
-                  <option value="2">2 - Lisensi Daerah</option>
-                  <option value="3">3 - Lisensi Nasional C</option>
-                  <option value="4">4 - Lisensi Nasional A/B</option>
-                  <option value="5">5 - Lisensi Internasional</option>
-                </select>
-              </div>
-
-              {/* Level Prestasi */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Level Prestasi
-                </label>
-                <select
-                  value={form.prestasi}
-                  onChange={(e) => set("prestasi", e.target.value)}
-                  className="input-field"
-                >
-                  <option value="">Pilih level prestasi</option>
-                  <option value="1">1 - Belum ada prestasi</option>
-                  <option value="2">2 - Juara Daerah / Provinsi</option>
-                  <option value="3">3 - Juara Nasional</option>
-                  <option value="4">4 - Juara Internasional</option>
-                  <option value="5">5 - Olimpiade / Kejuaraan Dunia</option>
-                </select>
-              </div>
-
-              {/* Range Harga */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Range Harga per Pertemuan (Rp)
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-xs text-slate-400 mb-1">Minimum</p>
+                <div className="field-group">
+                  <label className="field-label">Password</label>
+                  <div className="input-wrap">
                     <input
-                      type="number"
-                      value={form.harga_min}
-                      onChange={(e) => set("harga_min", e.target.value)}
-                      className="input-field"
-                      placeholder="100000"
+                      type={show ? "text" : "password"}
+                      value={form.password}
+                      onChange={(e) => set("password", e.target.value)}
+                      placeholder="Min. 6 karakter"
+                      className="plain-input"
                     />
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-400 mb-1">Maksimum</p>
-                    <input
-                      type="number"
-                      value={form.harga_max}
-                      onChange={(e) => set("harga_max", e.target.value)}
-                      className="input-field"
-                      placeholder="250000"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setShow((s) => !s)}
+                      className="eye-btn"
+                    >
+                      {show ? <HiEyeOff /> : <HiEye />}
+                    </button>
                   </div>
                 </div>
-              </div>
 
-              {/* Deskripsi */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Deskripsi Tambahan (opsional)
-                </label>
-                <textarea
-                  value={form.deskripsi}
-                  onChange={(e) => set("deskripsi", e.target.value)}
-                  className="input-field min-h-[80px] resize-none"
-                  placeholder="Informasi tambahan tentang dirimu..."
-                />
-              </div>
-            </div>
-          )}
+                <div className="field-group">
+                  <label className="field-label">Umur (opsional)</label>
+                  <input
+                    type="number"
+                    value={form.umur}
+                    onChange={(e) => set("umur", e.target.value)}
+                    placeholder="25"
+                    className="plain-input"
+                  />
+                </div>
 
-          {/* Step 2 — Konfirmasi */}
-          {step === 2 && (
-            <div>
-              <h3 className="font-display font-bold text-xl text-slate-900 dark:text-white mb-4">
-                Konfirmasi Data
-              </h3>
-              <div className="space-y-3 mb-6">
+                <div className="field-group">
+                  <label className="field-label">Domisili / Kota</label>
+                  <input
+                    type="text"
+                    value={form.domisili}
+                    onChange={(e) => set("domisili", e.target.value)}
+                    placeholder="Kabupaten Magelang"
+                    className="plain-input"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 1 — Keahlian */}
+            {step === 1 && (
+              <div className="auth-form">
+                <div className="field-group">
+                  <label className="field-label">Cabang Olahraga</label>
+                  <select
+                    value={form.cabor_id}
+                    onChange={(e) => {
+                      const selected = caborList.find(
+                        (c) => String(c.cabor_id) === e.target.value,
+                      );
+                      set("cabor_id", e.target.value);
+                      set("cabor_nama", selected?.nama_cabor || "");
+                    }}
+                    className="plain-input"
+                  >
+                    <option value="">Pilih Cabang Olahraga</option>
+                    {caborList.map((c) => (
+                      <option key={c.cabor_id} value={c.cabor_id}>
+                        {c.nama_cabor}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="field-group">
+                  <label className="field-label">Spesialis (opsional)</label>
+                  <input
+                    type="text"
+                    value={form.spesialis}
+                    onChange={(e) => set("spesialis", e.target.value)}
+                    placeholder="Antar Sekolah, Club, dan Daerah"
+                    className="plain-input"
+                  />
+                </div>
+
+                <div className="field-group">
+                  <label className="field-label">Pengalaman Melatih</label>
+                  <p className="field-hint">
+                    Tulis satu per baris (nama sekolah, tim, atau klub). Jumlah
+                    entri = nilai pengalaman (max 5).
+                  </p>
+                  <textarea
+                    value={form.pengalaman_melatih}
+                    onChange={(e) => set("pengalaman_melatih", e.target.value)}
+                    className="plain-input plain-textarea"
+                    placeholder={`SD N Pucungrejo 1\nSMP IT Ihsanul Fikri\nTIM Putra U19 KAB. Magelang`}
+                  />
+                  {form.pengalaman_melatih && (
+                    <p className="field-note">
+                      {Math.min(
+                        5,
+                        form.pengalaman_melatih.split("\n").filter(Boolean)
+                          .length,
+                      )}{" "}
+                      entri terdeteksi → nilai pengalaman:{" "}
+                      {Math.min(
+                        5,
+                        form.pengalaman_melatih.split("\n").filter(Boolean)
+                          .length,
+                      )}
+                      /5
+                    </p>
+                  )}
+                </div>
+
+                <div className="field-group">
+                  <label className="field-label">Level Lisensi</label>
+                  <select
+                    value={form.lisensi}
+                    onChange={(e) => set("lisensi", e.target.value)}
+                    className="plain-input"
+                  >
+                    <option value="">Pilih level lisensi</option>
+                    <option value="1">1 - Belum ada lisensi</option>
+                    <option value="2">2 - Lisensi Daerah</option>
+                    <option value="3">3 - Lisensi Nasional C</option>
+                    <option value="4">4 - Lisensi Nasional A/B</option>
+                    <option value="5">5 - Lisensi Internasional</option>
+                  </select>
+                </div>
+
+                <div className="field-group">
+                  <label className="field-label">Level Prestasi</label>
+                  <select
+                    value={form.prestasi}
+                    onChange={(e) => set("prestasi", e.target.value)}
+                    className="plain-input"
+                  >
+                    <option value="">Pilih level prestasi</option>
+                    <option value="1">1 - Belum ada prestasi</option>
+                    <option value="2">2 - Juara Daerah / Provinsi</option>
+                    <option value="3">3 - Juara Nasional</option>
+                    <option value="4">4 - Juara Internasional</option>
+                    <option value="5">5 - Olimpiade / Kejuaraan Dunia</option>
+                  </select>
+                </div>
+
+                <div className="field-group">
+                  <label className="field-label">
+                    Range Harga per Pertemuan (Rp)
+                  </label>
+                  <div className="price-grid">
+                    <div>
+                      <p className="field-hint">Minimum</p>
+                      <input
+                        type="number"
+                        value={form.harga_min}
+                        onChange={(e) => set("harga_min", e.target.value)}
+                        placeholder="100000"
+                        className="plain-input"
+                      />
+                    </div>
+                    <div>
+                      <p className="field-hint">Maksimum</p>
+                      <input
+                        type="number"
+                        value={form.harga_max}
+                        onChange={(e) => set("harga_max", e.target.value)}
+                        placeholder="250000"
+                        className="plain-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="field-group">
+                  <label className="field-label">
+                    Deskripsi Tambahan (opsional)
+                  </label>
+                  <textarea
+                    value={form.deskripsi}
+                    onChange={(e) => set("deskripsi", e.target.value)}
+                    className="plain-input plain-textarea plain-textarea--sm"
+                    placeholder="Informasi tambahan tentang dirimu..."
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 2 — Konfirmasi */}
+            {step === 2 && (
+              <div className="confirm-block">
                 {[
                   ["Nama", form.nama],
                   ["Email", form.email],
@@ -437,94 +495,259 @@ export default function PelatihRegisterPage() {
                       : "-",
                   ],
                 ].map(([k, v]) => (
-                  <div
-                    key={k}
-                    className="flex justify-between items-start py-2 border-b border-slate-100 dark:border-slate-700 last:border-0"
-                  >
-                    <span className="text-sm text-slate-500 dark:text-slate-400">
-                      {k}
-                    </span>
-                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 text-right ml-4">
-                      {v || "-"}
-                    </span>
+                  <div key={k} className="confirm-row">
+                    <span className="confirm-key">{k}</span>
+                    <span className="confirm-val">{v || "-"}</span>
                   </div>
                 ))}
-              </div>
 
-              {/* Preview pengalaman melatih */}
-              {form.pengalaman_melatih && (
-                <div className="mb-4">
-                  <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-2">
-                    Pengalaman Melatih:
-                  </p>
-                  <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl max-h-40 overflow-y-auto">
-                    {form.pengalaman_melatih
-                      .split("\n")
-                      .filter(Boolean)
-                      .map((item, i) => (
-                        <p
-                          key={i}
-                          className="text-sm text-slate-700 dark:text-slate-300"
-                        >
-                          • {item}
-                        </p>
-                      ))}
+                {form.pengalaman_melatih && (
+                  <div className="confirm-exp">
+                    <p className="confirm-exp-title">Pengalaman Melatih:</p>
+                    <div className="confirm-exp-box">
+                      {form.pengalaman_melatih
+                        .split("\n")
+                        .filter(Boolean)
+                        .map((item, i) => (
+                          <p key={i} className="confirm-exp-item">
+                            • {item}
+                          </p>
+                        ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800/30">
-                <p className="text-xs text-amber-700 dark:text-amber-300">
+                <div className="confirm-notice">
                   Setelah mendaftar, akun Anda akan menunggu verifikasi dari
                   admin (1-3 hari kerja). Data profil bisa diupdate di dashboard
                   setelah login.
-                </p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Navigation */}
-          <div className="flex justify-between mt-8 gap-3">
-            {step > 0 ? (
-              <button
-                onClick={handleBack}
-                className="btn-secondary flex-1 justify-center"
-              >
-                <HiArrowLeft className="w-4 h-4" /> Kembali
-              </button>
-            ) : (
-              <div />
-            )}
-            {step < 2 ? (
-              <button
-                onClick={handleNext}
-                className="btn-primary flex-1 justify-center"
-              >
-                Lanjut <HiArrowRight className="w-4 h-4" />
-              </button>
-            ) : (
-              <motion.button
-                onClick={handleSubmit}
-                disabled={loading}
-                whileTap={{ scale: 0.98 }}
-                className="btn-primary flex-1 justify-center disabled:opacity-60"
-              >
-                {loading ? "Mendaftar..." : "Daftar Sekarang"}
-              </motion.button>
-            )}
+            {/* Navigation */}
+            <div className="step-nav">
+              {step > 0 ? (
+                <button onClick={handleBack} className="outline-btn step-btn">
+                  <HiArrowLeft /> Kembali
+                </button>
+              ) : (
+                <div />
+              )}
+              {step < 2 ? (
+                <button onClick={handleNext} className="submit-btn step-btn">
+                  Lanjut <HiArrowRight />
+                </button>
+              ) : (
+                <button
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="submit-btn step-btn"
+                >
+                  {loading ? <span className="spinner" /> : "Daftar Sekarang"}
+                </button>
+              )}
+            </div>
           </div>
         </div>
+      </div>
 
-        <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
-          Sudah punya akun?{" "}
-          <Link
-            to="/login"
-            className="text-primary-600 font-bold hover:text-primary-700"
-          >
-            Masuk
-          </Link>
-        </p>
-      </motion.div>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        .auth-page {
+          min-height: 100vh;
+          width: 100vw;
+          background: #f3f4f6;
+          display: flex; align-items: stretch; justify-content: center;
+          font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        .auth-card {
+          width: 100%;
+          max-width: 1440px;
+          margin: 0 auto;
+          background: #fff;
+          overflow: hidden;
+          display: grid;
+          grid-template-columns: 1.05fr 1fr;
+          min-height: 100vh;
+        }
+
+        /* ── Hero panel ── */
+        .hero-panel {
+          position: relative;
+          background: #dfe6f5;
+          display: flex; flex-direction: column; justify-content: space-between;
+          padding: 40px 44px;
+          overflow: hidden;
+        }
+        .hero-img {
+          position: absolute; inset: 0;
+          width: 100%; height: 100%;
+          object-fit: cover;
+          object-position: 50% 20%;
+          z-index: 0;
+          opacity: 0;
+          transition: opacity 1s ease-in-out;
+        }
+        .hero-img--active { opacity: 1; }
+        .hero-overlay {
+          position: absolute; inset: 0;
+          background: linear-gradient(180deg, rgba(255,255,255,0) 35%, rgba(37,99,235,0.5) 72%, rgba(29,78,216,0.92) 100%);
+          z-index: 1;
+        }
+        .hero-logo { position: relative; z-index: 2; display: flex; align-items: center; gap: 8px; }
+        .logo-mark { display: flex; }
+        .logo-text { font-weight: 700; font-size: 17px; color: #111; }
+        .hero-bottom { position: relative; z-index: 2; }
+        .hero-headline {
+          font-family: 'Instrument Serif', serif;
+          font-weight: 400; font-size: 34px; line-height: 1.15;
+          color: #fff; margin-bottom: 12px;
+        }
+        .hero-desc { font-size: 13px; line-height: 1.6; color: rgba(255,255,255,0.88); max-width: 360px; margin-bottom: 18px; }
+        .hero-dots { display: flex; gap: 8px; }
+        .hero-dot {
+          width: 8px; height: 8px; border-radius: 50%;
+          border: none; background: rgba(255,255,255,0.4);
+          cursor: pointer; padding: 0; transition: all 0.2s;
+        }
+        .hero-dot--active { background: #fff; width: 20px; border-radius: 4px; }
+
+        /* ── Form panel ── */
+        .form-panel {
+          padding: 48px 64px;
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          overflow-y: auto;
+        }
+        .form-inner { width: 100%; max-width: 460px; }
+
+        .form-title { font-size: 26px; font-weight: 700; color: #111; margin-bottom: 6px; }
+        .form-sub { font-size: 13px; color: #6b7280; margin-bottom: 22px; }
+        .form-link { color: #2563EB; font-weight: 600; text-decoration: none; }
+        .form-link:hover { text-decoration: underline; }
+
+        /* ── Step indicator ── */
+        .step-indicator { display: flex; align-items: center; margin-bottom: 24px; }
+        .step-item { display: flex; align-items: center; gap: 8px; }
+        .step-circle {
+          width: 26px; height: 26px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 12px; font-weight: 700; color: #9ca3af;
+          background: #f3f4f6; flex-shrink: 0;
+          transition: all 0.2s;
+        }
+        .step-circle--active { background: #2563EB; color: #fff; }
+        .step-circle--done { background: #16a34a; color: #fff; }
+        .step-label { font-size: 12px; font-weight: 600; color: #9ca3af; display: none; }
+        .step-label--active { color: #2563EB; }
+        .step-line { width: 28px; height: 2px; background: #e5e7eb; margin: 0 6px; }
+        .step-line--done { background: #16a34a; }
+        @media (min-width: 640px) { .step-label { display: block; } }
+
+        .error-box {
+          display: flex; align-items: flex-start; gap: 8px;
+          background: #fef2f2; border: 1px solid #fecaca;
+          border-radius: 8px; padding: 10px 12px; margin-bottom: 16px;
+        }
+        .error-icon { color: #ef4444; width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+        .error-msg { color: #b91c1c; font-size: 12.5px; font-weight: 500; }
+
+        .auth-form { display: flex; flex-direction: column; gap: 16px; width: 100%; }
+        .field-group { display: flex; flex-direction: column; gap: 6px; }
+        .field-label { font-size: 12.5px; font-weight: 600; color: #374151; }
+        .field-hint { font-size: 11.5px; color: #9ca3af; margin-bottom: 2px; }
+        .field-note { font-size: 11.5px; color: #2563EB; margin-top: 2px; }
+
+        .plain-input {
+          width: 100%;
+          background: #fff;
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
+          padding: 11px 14px;
+          font-size: 13.5px;
+          color: #111;
+          outline: none;
+          font-family: inherit;
+          transition: border-color 0.15s;
+        }
+        .plain-input::placeholder { color: #9ca3af; }
+        .plain-input:focus { border-color: #2563EB; }
+
+        .plain-textarea { min-height: 120px; resize: none; line-height: 1.5; }
+        .plain-textarea--sm { min-height: 72px; }
+
+        .input-wrap { position: relative; }
+        .eye-btn {
+          position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+          background: none; border: none; cursor: pointer;
+          color: #9ca3af; font-size: 16px; display: flex; align-items: center;
+        }
+        .eye-btn:hover { color: #4b5563; }
+
+        .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        /* ── Confirmation step ── */
+        .confirm-block { display: flex; flex-direction: column; gap: 4px; }
+        .confirm-row {
+          display: flex; justify-content: space-between; align-items: flex-start;
+          padding: 10px 0; border-bottom: 1px solid #f1f5f9;
+        }
+        .confirm-key { font-size: 12.5px; color: #6b7280; }
+        .confirm-val { font-size: 12.5px; font-weight: 600; color: #111; text-align: right; margin-left: 16px; }
+        .confirm-exp { margin-top: 14px; }
+        .confirm-exp-title { font-size: 12.5px; font-weight: 600; color: #6b7280; margin-bottom: 8px; }
+        .confirm-exp-box {
+          background: #f9fafb; border-radius: 8px; padding: 12px;
+          max-height: 140px; overflow-y: auto;
+        }
+        .confirm-exp-item { font-size: 12.5px; color: #374151; line-height: 1.7; }
+        .confirm-notice {
+          margin-top: 16px; padding: 12px 14px;
+          background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+          font-size: 11.5px; color: #92400e; line-height: 1.6;
+        }
+
+        /* ── Nav buttons ── */
+        .step-nav { display: flex; gap: 12px; margin-top: 24px; }
+        .step-btn {
+          flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+
+        .submit-btn {
+          background: #2563EB;
+          border: none; border-radius: 8px;
+          color: #fff; font-weight: 600; font-size: 14px;
+          padding: 12px;
+          cursor: pointer;
+          transition: background 0.15s;
+        }
+        .submit-btn:hover:not(:disabled) { background: #1d4ed8; }
+        .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .outline-btn {
+          background: #fff; border: 1px solid #d1d5db; border-radius: 8px;
+          color: #374151; font-size: 14px; font-weight: 600;
+          padding: 12px; cursor: pointer; transition: all 0.15s;
+        }
+        .outline-btn:hover { border-color: #9ca3af; background: #f9fafb; }
+
+        .spinner {
+          width: 16px; height: 16px;
+          border: 2px solid rgba(255,255,255,0.4);
+          border-top-color: #fff; border-radius: 50%;
+          display: inline-block; animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+          .auth-card { grid-template-columns: 1fr; }
+          .hero-panel { display: none; }
+          .form-panel { padding: 32px 24px; }
+        }
+      `}</style>
     </div>
   );
 }
