@@ -258,6 +258,7 @@ function StatusPill({ status }) {
     konfirmasi: { label: "Aktif", cls: "bg-blue-50 text-blue-600" },
     pending: { label: "Pending", cls: "bg-amber-50 text-amber-600" },
     completed: { label: "Selesai", cls: "bg-[#f5f5f7] text-[#6e6e73]" },
+    selesai: { label: "Selesai", cls: "bg-[#f5f5f7] text-[#6e6e73]" },
     dibatalkan: { label: "Batal", cls: "bg-red-50 text-red-500" },
     cancelled: { label: "Batal", cls: "bg-red-50 text-red-500" },
   };
@@ -1597,7 +1598,8 @@ export function UserRiwayat() {
   const filtered = bookings.filter((b) => {
     if (tab === "Aktif")
       return ["pending", "konfirmasi", "confirmed"].includes(b.status);
-    if (tab === "Selesai") return b.status === "completed";
+    if (tab === "Selesai")
+      return b.status === "selesai" || b.status === "completed";
     return true;
   });
 

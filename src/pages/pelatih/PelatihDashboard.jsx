@@ -15,6 +15,7 @@ import {
   HiExclamationTriangle,
   HiCalendarDays,
   HiMapPin,
+  HiCheckBadge,
 } from "react-icons/hi2";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { StatusBadge } from "../../components/ui/Badges";
@@ -51,6 +52,7 @@ const HOURS = Array.from({ length: 14 }, (_, i) => i + 7); // 07:00 – 20:00
 
 const STATUS_BOOKING_COLOR = {
   dikonfirmasi: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  konfirmasi: "bg-emerald-50 text-emerald-700 border-emerald-200",
   pending: "bg-blue-50 text-blue-700 border-blue-200",
   dibatalkan: "bg-red-50 text-red-500 border-red-200",
   selesai: "bg-slate-50 text-slate-400 border-slate-200",
@@ -534,6 +536,25 @@ export default function PelatihDashboard() {
     }
   };
 
+  // ── Tandai booking sebagai selesai ──────────────────────────────
+  const handleTandaiSelesai = async (pemesananId) => {
+    try {
+      await api.patch(`/api/pelatih/bookings/${pemesananId}/status`, {
+        status: "selesai",
+      });
+      setBookings((prev) =>
+        prev.map((b) =>
+          (b.booking_id || b.pemesanan_id) === pemesananId
+            ? { ...b, status: "selesai" }
+            : b,
+        ),
+      );
+      toast.success("Booking ditandai selesai!");
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Gagal menandai selesai");
+    }
+  };
+
   const p = profil;
   const r = ranking;
   const isVerified = p?.status_verifikasi === "terverifikasi";
@@ -918,7 +939,19 @@ export default function PelatihDashboard() {
                     </p>
                   </div>
                 </div>
-                <StatusBadge status={b.status} />
+                <div className="flex items-center gap-2">
+                  <StatusBadge status={b.status} />
+                  {b.status === "konfirmasi" && (
+                    <button
+                      onClick={() =>
+                        handleTandaiSelesai(b.booking_id || b.pemesanan_id)
+                      }
+                      className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-full transition-colors"
+                    >
+                      <HiCheckBadge className="w-3.5 h-3.5" /> Tandai Selesai
+                    </button>
+                  )}
+                </div>
               </motion.div>
             ))}
           </div>
