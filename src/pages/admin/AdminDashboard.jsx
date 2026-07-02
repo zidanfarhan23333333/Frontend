@@ -1,3 +1,4 @@
+// AdminDashboard.jsx
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
@@ -21,11 +22,6 @@ import { StatusBadge } from "../../components/ui/Badges";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 
-// ✅ FIX: Fungsi hitungSkorAHP dihapus sepenuhnya.
-//         Skor AHP kini dihitung eksklusif di backend (/api/admin/ranking),
-//         sehingga Dashboard, halaman Ranking, dan RankingBarChart
-//         selalu menampilkan angka yang identik.
-
 export default function AdminDashboard() {
   const { api } = useAuth();
   const [stats, setStats] = useState(null);
@@ -42,9 +38,6 @@ export default function AdminDashboard() {
     setLoading(true);
     setError("");
     try {
-      // ✅ FIX: Gunakan /api/admin/ranking (sama dengan AdminRanking.jsx)
-      //         sebagai satu-satunya sumber data pelatih + skor AHP.
-      //         Tidak lagi fetch /api/pelatih lalu hitung sendiri di frontend.
       const [statsRes, rankingRes, bookingRes] = await Promise.all([
         api.get("/api/admin/stats"),
         api.get("/api/admin/ranking"),
@@ -53,18 +46,16 @@ export default function AdminDashboard() {
 
       setStats(statsRes.data.data || statsRes.data);
 
-      // Parse pelatih dari ranking endpoint (skor sudah dihitung backend)
       const rankingRaw = rankingRes.data.data || rankingRes.data;
       setPelatihList(
-        rankingRaw.pelatih || (Array.isArray(rankingRaw) ? rankingRaw : [])
+        rankingRaw.pelatih || (Array.isArray(rankingRaw) ? rankingRaw : []),
       );
 
       const bookingRaw = bookingRes.data.data || bookingRes.data;
       setBookingList(
-        bookingRaw.bookings || (Array.isArray(bookingRaw) ? bookingRaw : [])
+        bookingRaw.bookings || (Array.isArray(bookingRaw) ? bookingRaw : []),
       );
     } catch (err) {
-      console.error("❌ Error fetching dashboard:", err);
       setError(err.response?.data?.message || "Gagal memuat data");
       toast.error("Gagal memuat dashboard");
     } finally {
@@ -112,14 +103,14 @@ export default function AdminDashboard() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600"
+          className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm"
         >
           {error}
         </motion.div>
       )}
 
-      {/* Stats row 1 */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      {/* Stats row 1 — 1 col mobile, 2 col sm, 4 col lg */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
         <StatsCard
           title="Total Pelatih"
           value={s.totalPelatih || 0}
@@ -158,7 +149,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Stats row 2 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
         <StatsCard
           title="Total Revenue"
           value={formatRp(s.totalRevenue || 0)}
@@ -179,77 +170,85 @@ export default function AdminDashboard() {
         />
       </div>
 
-      {/* Charts row 1 */}
-      <div className="grid lg:grid-cols-3 gap-6 mb-6">
+      {/* Charts row 1 — stack di mobile */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="card p-6 lg:col-span-2"
+          className="card p-4 lg:col-span-2"
         >
-          <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white mb-1">
+          <h3 className="font-display font-bold text-base text-slate-900 dark:text-white mb-1">
             Tren Booking
           </h3>
-          <p className="text-xs text-slate-400 mb-4">
+          <p className="text-xs text-slate-400 mb-3">
             Jumlah booking per bulan
           </p>
-          <BookingLineChart />
+          <div className="w-full overflow-x-auto">
+            <BookingLineChart />
+          </div>
         </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
-          className="card p-6"
+          className="card p-4"
         >
-          <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white mb-1">
+          <h3 className="font-display font-bold text-base text-slate-900 dark:text-white mb-1">
             Distribusi Cabor
           </h3>
-          <p className="text-xs text-slate-400 mb-4">
+          <p className="text-xs text-slate-400 mb-3">
             Booking per cabang olahraga
           </p>
-          <CaborPieChart />
+          <div className="w-full overflow-x-auto">
+            <CaborPieChart />
+          </div>
         </motion.div>
       </div>
 
       {/* Charts row 2 */}
-      <div className="grid lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="card p-6"
+          className="card p-4"
         >
-          <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white mb-1">
+          <h3 className="font-display font-bold text-base text-slate-900 dark:text-white mb-1">
             Bobot Kriteria AHP
           </h3>
-          <p className="text-xs text-slate-400 mb-4">
+          <p className="text-xs text-slate-400 mb-3">
             Distribusi bobot setiap kriteria
           </p>
-          <AHPBobot />
+          <div className="w-full overflow-x-auto">
+            <AHPBobot />
+          </div>
         </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.45 }}
-          className="card p-6"
+          className="card p-4"
         >
-          <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white mb-1">
+          <h3 className="font-display font-bold text-base text-slate-900 dark:text-white mb-1">
             Ranking Pelatih AHP
           </h3>
-          <p className="text-xs text-slate-400 mb-4">Skor AHP top 8 pelatih</p>
-          <RankingBarChart />
+          <p className="text-xs text-slate-400 mb-3">Skor AHP top 8 pelatih</p>
+          <div className="w-full overflow-x-auto">
+            <RankingBarChart />
+          </div>
         </motion.div>
       </div>
 
       {/* Bottom row */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="card p-6"
+          className="card p-4"
         >
-          <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white mb-4">
+          <h3 className="font-display font-bold text-base text-slate-900 dark:text-white mb-4">
             Top 5 Pelatih
           </h3>
           <div className="space-y-1">
@@ -275,17 +274,17 @@ export default function AdminDashboard() {
           transition={{ delay: 0.55 }}
           className="card overflow-hidden"
         >
-          <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700">
-            <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">
+          <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+            <h3 className="font-display font-bold text-base text-slate-900 dark:text-white">
               Booking Terbaru
             </h3>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[400px]">
               <thead className="bg-slate-50 dark:bg-slate-700/50">
                 <tr>
                   {["User", "Pelatih", "Cabor", "Status"].map((h) => (
-                    <th key={h} className="table-header">
+                    <th key={h} className="table-header text-xs">
                       {h}
                     </th>
                   ))}
@@ -294,13 +293,13 @@ export default function AdminDashboard() {
               <tbody>
                 {bookingList.slice(0, 5).map((b) => (
                   <tr key={b.booking_id || b.id} className="table-row">
-                    <td className="table-cell font-medium">
+                    <td className="table-cell text-xs font-medium">
                       {b.userName || b.user?.nama || "-"}
                     </td>
-                    <td className="table-cell text-slate-500 dark:text-slate-400">
+                    <td className="table-cell text-xs text-slate-500">
                       {(b.pelatihNama || b.pelatih?.nama || "-").split(" ")[0]}
                     </td>
-                    <td className="table-cell">
+                    <td className="table-cell text-xs">
                       {b.cabor || b.pelatih?.cabang?.nama_cabor || "-"}
                     </td>
                     <td className="table-cell">
@@ -312,7 +311,7 @@ export default function AdminDashboard() {
                   <tr>
                     <td
                       colSpan={4}
-                      className="table-cell text-center text-slate-400 py-4"
+                      className="table-cell text-center text-slate-400 py-4 text-xs"
                     >
                       Belum ada booking
                     </td>
