@@ -16,7 +16,6 @@ import {
   HiFire,
   HiXMark,
   HiChevronRight,
-  HiUsers,
 } from "react-icons/hi2";
 import Avatar from "../../components/ui/Avatar";
 import { useAuth } from "../../context/AuthContext";
@@ -113,10 +112,11 @@ function JadwalTersediaSection({ pelatihId, api }) {
         const available = (Array.isArray(raw) ? raw : []).filter(
           (j) => j.status === "available",
         );
-        const sorted = available.sort(
-          (a, b) => HARI_ORDER.indexOf(a.hari) - HARI_ORDER.indexOf(b.hari),
+        setJadwal(
+          available.sort(
+            (a, b) => HARI_ORDER.indexOf(a.hari) - HARI_ORDER.indexOf(b.hari),
+          ),
         );
-        setJadwal(sorted);
       } catch {
         setJadwal([]);
       } finally {
@@ -139,9 +139,6 @@ function JadwalTersediaSection({ pelatihId, api }) {
         <HiCalendarDays className="w-8 h-8 text-[#d0d0d0] mb-2" />
         <p className="text-[13px] text-[#aeaeb2] font-medium">
           Belum ada jadwal tersedia
-        </p>
-        <p className="text-[11px] text-[#c8c8c8] mt-0.5">
-          Pelatih belum menambahkan jadwal sesi
         </p>
       </div>
     );
@@ -441,9 +438,6 @@ export function UserDashboard() {
             <span className="text-[13px] text-[#aeaeb2]">
               Cari pelatih atau cabang olahraga...
             </span>
-            <span className="ml-auto text-[11px] font-semibold text-[#aeaeb2] bg-[#f5f5f7] px-1.5 py-0.5 rounded-md">
-              ⌘K
-            </span>
           </div>
         </Link>
 
@@ -576,6 +570,7 @@ export function UserDashboard() {
         </div>
       </div>
 
+      {/* Right panel */}
       <div className="hidden xl:flex w-72 flex-col bg-white border-l border-[#f0f0f0] overflow-y-auto flex-shrink-0">
         <div className="p-5">
           <div className="mb-6">
@@ -735,11 +730,6 @@ export function UserCariPelatih() {
     return list;
   }, [allCoaches, search, cabor, sort, maxBiaya]);
 
-  const caborOptions = [
-    "Semua",
-    ...caborList.map((c) => c.nama_cabor || c.nama),
-  ];
-
   return (
     <div className="p-6 lg:p-8" style={sf}>
       <div className="flex flex-col sm:flex-row gap-2 mb-5">
@@ -863,7 +853,7 @@ export function UserCariPelatih() {
       </AnimatePresence>
 
       <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 mb-5">
-        {caborOptions.map((c) => (
+        {["Semua", ...caborList.map((c) => c.nama_cabor || c.nama)].map((c) => (
           <button
             key={c}
             onClick={() => setCabor(c)}
@@ -1051,9 +1041,16 @@ export function UserDetailPelatih() {
       </div>
     );
 
+  const hargaText =
+    coach.harga_min && coach.harga_max
+      ? `${formatRp(coach.harga_min)} – ${formatRp(coach.harga_max)}`
+      : formatRp(coach.biaya);
+
   return (
     <div className="flex h-full" style={sf}>
-      <div className="flex-1 overflow-y-auto">
+      {/* ✅ pb-24 di mobile agar tidak tertutup fixed bottom bar */}
+      <div className="flex-1 overflow-y-auto pb-24 lg:pb-0">
+        {/* Hero */}
         <div
           className={clsx(
             "relative h-56 bg-gradient-to-br flex items-end",
@@ -1099,11 +1096,12 @@ export function UserDetailPelatih() {
         </div>
 
         <div className="p-6">
+          {/* Quick stats */}
           <div className="grid grid-cols-4 gap-3 mb-6">
             {[
               {
                 label: "Pengalaman",
-                value: `${coach.pengalaman} / 5`,
+                value: `${coach.pengalaman}/5`,
                 icon: HiTrophy,
               },
               {
@@ -1123,15 +1121,52 @@ export function UserDetailPelatih() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.06 }}
-                className="bg-white rounded-2xl p-4 text-center border border-[#f0f0f0]"
+                className="bg-white rounded-2xl p-3 sm:p-4 text-center border border-[#f0f0f0]"
               >
-                <s.icon className="w-4 h-4 text-[#aeaeb2] mx-auto mb-2" />
-                <p className="text-[16px] font-bold text-[#0a0a0a] tracking-[-0.3px]">
+                <s.icon className="w-4 h-4 text-[#aeaeb2] mx-auto mb-1.5" />
+                <p className="text-[14px] sm:text-[16px] font-bold text-[#0a0a0a] tracking-[-0.3px]">
                   {s.value}
                 </p>
-                <p className="text-[11px] text-[#aeaeb2] mt-0.5">{s.label}</p>
+                <p className="text-[10px] sm:text-[11px] text-[#aeaeb2] mt-0.5">
+                  {s.label}
+                </p>
               </motion.div>
             ))}
+          </div>
+
+          {/* ✅ Mobile booking card — hanya tampil di bawah lg */}
+          <div className="lg:hidden mb-5">
+            <div className="bg-white rounded-2xl border border-[#f0f0f0] p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-[11px] text-[#aeaeb2] mb-0.5">
+                    {coach.harga_min && coach.harga_max
+                      ? "Range Harga"
+                      : "Per Sesi"}
+                  </p>
+                  <p className="text-[18px] font-bold text-[#0a0a0a] tracking-[-0.5px]">
+                    {hargaText}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <HiStar className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="text-[13px] font-medium">
+                    {coach.rating ?? "-"}
+                  </span>
+                  <span className="text-[12px] text-[#aeaeb2]">
+                    {" "}
+                    · {coach.totalBooking ?? 0} sesi
+                  </span>
+                </div>
+              </div>
+              <p className="text-[11px] font-semibold text-[#aeaeb2] uppercase tracking-wider mb-2">
+                Jadwal Tersedia
+              </p>
+              <JadwalBookingPanel
+                pelatihId={coach.id || coach.pelatih_id}
+                api={api}
+              />
+            </div>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-5">
@@ -1179,16 +1214,16 @@ export function UserDetailPelatih() {
                   </div>
                 </div>
               )}
-              {coach.harga_min && coach.harga_max ? (
+              {coach.harga_min && coach.harga_max && (
                 <div className="mt-3 p-3 bg-emerald-50 rounded-xl">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-500 mb-1">
                     Range Harga per Pertemuan
                   </p>
                   <p className="text-[14px] font-bold text-emerald-700">
-                    {formatRp(coach.harga_min)} – {formatRp(coach.harga_max)}
+                    {hargaText}
                   </p>
                 </div>
-              ) : null}
+              )}
               <div className="mt-4 p-4 bg-[#f5f5f7] rounded-xl">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-[#aeaeb2] mb-2">
                   Kriteria AHP
@@ -1242,6 +1277,7 @@ export function UserDetailPelatih() {
         </div>
       </div>
 
+      {/* Desktop booking panel */}
       <div className="hidden lg:flex w-72 flex-col bg-white border-l border-[#f0f0f0] flex-shrink-0">
         <div className="p-5 flex-1 overflow-y-auto">
           <div className="pb-5 border-b border-[#f0f0f0] mb-5">
@@ -1251,9 +1287,7 @@ export function UserDetailPelatih() {
                 : "Biaya per Sesi"}
             </p>
             <p className="text-[22px] font-bold text-[#0a0a0a] tracking-[-0.5px]">
-              {coach.harga_min && coach.harga_max
-                ? `${formatRp(coach.harga_min)} – ${formatRp(coach.harga_max)}`
-                : formatRp(coach.biaya)}
+              {hargaText}
             </p>
             <div className="flex items-center gap-1 mt-1">
               <HiStar className="w-3.5 h-3.5 text-amber-400" />
@@ -1261,6 +1295,7 @@ export function UserDetailPelatih() {
                 {coach.rating ?? "-"}
               </span>
               <span className="text-[#aeaeb2] text-[13px]">
+                {" "}
                 · {coach.totalBooking ?? 0} sesi
               </span>
             </div>
@@ -1283,6 +1318,24 @@ export function UserDetailPelatih() {
             Booking Sekarang <HiArrowUpRight className="w-4 h-4" />
           </Link>
         </div>
+      </div>
+
+      {/* ✅ Mobile fixed bottom booking bar */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-[#f0f0f0] p-4 flex items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] text-[#aeaeb2]">
+            {coach.harga_min && coach.harga_max ? "Range Harga" : "Per Sesi"}
+          </p>
+          <p className="text-[15px] font-bold text-[#0a0a0a] truncate">
+            {hargaText}
+          </p>
+        </div>
+        <Link
+          to={`/user/booking/${coach.id}`}
+          className="flex items-center gap-2 bg-[#0a0a0a] text-white text-[13px] font-semibold px-5 py-3 rounded-xl hover:opacity-90 transition-opacity whitespace-nowrap flex-shrink-0"
+        >
+          Booking Sekarang <HiArrowUpRight className="w-4 h-4" />
+        </Link>
       </div>
     </div>
   );
@@ -1320,8 +1373,6 @@ export function UserBooking() {
               cabor: raw?.cabang?.nama_cabor || fromList.cabor,
               color: fromList.color,
               initials: fromList.initials,
-              skorAHP: fromList.skorAHP,
-              ranking: fromList.ranking,
               lokasi: raw?.domisili || raw?.lokasi || fromList.lokasi || "-",
               harga_min: raw?.harga_min || null,
               harga_max: raw?.harga_max || null,
@@ -1335,7 +1386,6 @@ export function UserBooking() {
               pelatih_id: raw?.pelatih_id,
               cabor: raw?.cabang?.nama_cabor || "-",
               initials: raw?.nama?.slice(0, 2).toUpperCase(),
-              skorAHP: 0,
               lokasi: raw?.domisili || raw?.lokasi || "-",
               color:
                 CABOR_COLORS[raw?.cabang?.nama_cabor] ||
@@ -1386,6 +1436,11 @@ export function UserBooking() {
       </div>
     );
 
+  const hargaText =
+    coach.harga_min && coach.harga_max
+      ? `${formatRp(coach.harga_min)} – ${formatRp(coach.harga_max)}`
+      : formatRp(coach.biaya);
+
   return (
     <div className="p-6 lg:p-8 max-w-xl" style={sf}>
       <button
@@ -1411,10 +1466,8 @@ export function UserBooking() {
         </div>
         <div className="text-right flex-shrink-0">
           <p className="text-white/70 text-[11px]">Per Sesi</p>
-          <p className="text-[20px] font-bold text-white tracking-[-0.3px]">
-            {coach.harga_min && coach.harga_max
-              ? `${formatRp(coach.harga_min)} – ${formatRp(coach.harga_max)}`
-              : formatRp(coach.biaya)}
+          <p className="text-[16px] font-bold text-white tracking-[-0.3px]">
+            {hargaText}
           </p>
         </div>
       </div>
@@ -1473,11 +1526,7 @@ export function UserBooking() {
           <div className="bg-[#f5f5f7] rounded-xl p-4 space-y-2">
             <div className="flex justify-between text-[13px]">
               <span className="text-[#aeaeb2]">Biaya sesi</span>
-              <span className="font-semibold text-[#0a0a0a]">
-                {coach.harga_min && coach.harga_max
-                  ? `${formatRp(coach.harga_min)} – ${formatRp(coach.harga_max)}`
-                  : formatRp(coach.biaya)}
-              </span>
+              <span className="font-semibold text-[#0a0a0a]">{hargaText}</span>
             </div>
             <div className="flex justify-between text-[13px]">
               <span className="text-[#aeaeb2]">Durasi</span>
@@ -1542,7 +1591,6 @@ export function UserRiwayat() {
           </button>
         ))}
       </div>
-
       {loading ? (
         <div className="space-y-2 max-w-2xl">
           {[1, 2, 3].map((i) => (
