@@ -203,7 +203,7 @@ export function PelatihProfil() {
               <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-100">
                 {fotoUrl ? (
                   <img
-                    src={`http://localhost:3000${fotoUrl}?t=${fotoTs}`} // ← tambah ?t=${fotoTs}
+                    src={fotoUrl} // ← tambah ?t=${fotoTs}
                     alt={form.nama}
                     className="w-full h-full object-cover block"
                   />
